@@ -313,6 +313,15 @@ body.dark-mode .routine-category {
   accent-color: var(--primary);
 }
 
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
 @media (min-width: 600px) {
   .weekday-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -388,5 +397,9 @@ body.dark-mode .routine-category {
 
   .routine-actions {
     flex-wrap: wrap;
+  }
+
+  .form-actions {
+    flex-direction: column;
   }
 }

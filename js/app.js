@@ -8,6 +8,8 @@ const themeToggle = document.getElementById("themeToggle");
 const exportButton = document.getElementById("exportButton");
 const importButton = document.getElementById("importButton");
 const importFile = document.getElementById("importFile");
+const submitButton = document.getElementById("submitButton");
+const cancelEditButton = document.getElementById("cancelEditButton");
 
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
 
@@ -102,6 +104,18 @@ function toggleRoutine(id) {
 
   saveCompletionHistory();
   renderRoutines();
+}
+
+function resetRoutineForm() {
+  editingRoutineId = null;
+
+  routineForm.reset();
+  clearSelectedDays();
+  selectTodayByDefault();
+  showDayError(false);
+
+  submitButton.textContent = "Add routine";
+  cancelEditButton.classList.add("d-none");
 }
 
 /* ------------------------------
@@ -327,6 +341,10 @@ function findScheduleConflict(newRoutine, ignoredRoutineId = null) {
   });
 }
 
+cancelEditButton.addEventListener("click", () => {
+  resetRoutineForm();
+});
+
 /* ------------------------------
    Submit routine form
 ------------------------------ */
@@ -427,8 +445,8 @@ function editRoutine(id) {
 
   editingRoutineId = id;
 
-  routineForm.querySelector('button[type="submit"]').textContent =
-    "Update routine";
+  submitButton.textContent = "Update routine";
+  cancelEditButton.classList.remove("d-none");
 
   window.scrollTo({
     top: 0,
@@ -468,15 +486,7 @@ function deleteRoutine(id) {
   saveCompletionHistory();
 
   if (editingRoutineId === id) {
-    editingRoutineId = null;
-
-    routineForm.reset();
-    clearSelectedDays();
-    selectTodayByDefault();
-    showDayError(false);
-
-    routineForm.querySelector('button[type="submit"]').textContent =
-      "Add routine";
+    resetRoutineForm();
   }
 
   saveRoutines();
