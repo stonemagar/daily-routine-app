@@ -7,10 +7,41 @@ const progressPercent = document.getElementById("progressPercent");
 const themeToggle = document.getElementById("themeToggle");
 
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
-let editingRoutineId = null;
+
+let completionHistory =
+  JSON.parse(localStorage.getItem("completionHistory")) || {};
+
+  let editingRoutineId = null;
 
 function saveRoutines() {
   localStorage.setItem("routines", JSON.stringify(routines));
+}
+
+function saveCompletionHistory() {
+  localStorage.setItem(
+    "completionHistory",
+    JSON.stringify(completionHistory)
+  );
+}
+
+function getTodayKey() {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayCompletedRoutineIds() {
+  const todayKey = getTodayKey();
+
+  return completionHistory[todayKey] || [];
+}
+
+function isRoutineCompleted(routineId) {
+  return getTodayCompletedRoutineIds().includes(routineId);
 }
 
 function getTodayName() {
@@ -76,12 +107,15 @@ function renderRoutines() {
   routineList.innerHTML = filteredRoutines
     .map(
       (routine) => `
-        <article class="routine-item ${routine.completed ? "completed" : ""}">
+
+        <article class="routine-item ${
+            isRoutineCompleted(routine.id) ? "completed" : ""
+        }">
           <input
             class="complete-checkbox"
             type="checkbox"
             aria-label="Mark ${routine.title} complete"
-            ${routine.completed ? "checked" : ""}
+            ${isRoutineCompleted(routine.id) ? "checked" : ""}
             onchange="toggleRoutine('${routine.id}')"
           />
 
@@ -125,8 +159,9 @@ function renderRoutines() {
 
 function updateProgress(selectedRoutines) {
   const total = selectedRoutines.length;
-  const completed = selectedRoutines.filter(
-    (routine) => routine.completed
+
+  const completed = selectedRoutines.filter((routine) =>
+    isRoutineCompleted(routine.id)
   ).length;
 
   const percentage =
@@ -145,8 +180,7 @@ function createRoutine(formData) {
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
     category: formData.get("category"),
-    day: formData.get("day"),
-    completed: false
+    day: formData.get("day")
   };
 }
 
@@ -205,16 +239,19 @@ routineForm.addEventListener("submit", function (event) {
 });
 
 function toggleRoutine(id) {
-  routines = routines.map((routine) =>
-    routine.id === id
-      ? {
-          ...routine,
-          completed: !routine.completed
-        }
-      : routine
-  );
+  const todayKey = getTodayKey();
 
-  saveRoutines();
+  const completedIds = completionHistory[todayKey] || [];
+
+  if (completedIds.includes(id)) {
+    completionHistory[todayKey] = completedIds.filter(
+      (routineId) => routineId !== id
+    );
+  } else {
+    completionHistory[todayKey] = [...completedIds, id];
+  }
+
+  saveCompletionHistory();
   renderRoutines();
 }
 
@@ -252,6 +289,18 @@ function deleteRoutine(id) {
   if (!shouldDelete) return;
 
   routines = routines.filter((routine) => routine.id !== id);
+
+  Object.keys(completionHistory).forEach((date) => {
+  completionHistory[date] = completionHistory[date].filter(
+    (routineId) => routineId !== id
+  );
+
+  if (completionHistory[date].length === 0) {
+    delete completionHistory[date];
+  }
+});
+
+saveCompletionHistory();
 
   if (editingRoutineId === id) {
     editingRoutineId = null;
@@ -318,7 +367,31 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+function migrateOldCompletionData() {
+  const completedRoutineIds = routines
+    .filter((routine) => routine.completed === true)
+    .map((routine) => routine.id);
+
+  if (completedRoutineIds.length === 0) {
+    return;
+  }
+
+  const todayKey = getTodayKey();
+  const existingIds = completionHistory[todayKey] || [];
+
+  completionHistory[todayKey] = [
+    ...new Set([...existingIds, ...completedRoutineIds])
+  ];
+
+  routines = routines.map(({ completed, ...routine }) => routine);
+
+  saveRoutines();
+  saveCompletionHistory();
+}
+
+
 displayTodayDate();
 setDefaultDay();
 loadTheme();
+migrateOldCompletionData();
 renderRoutines();
