@@ -1,4 +1,4 @@
-const CACHE_NAME = "daily-routine-app-v3";
+const CACHE_NAME = "daily-routine-app-v4";
 
 const APP_FILES = [
   "./",
@@ -7,14 +7,14 @@ const APP_FILES = [
   "./js/app.js",
   "./manifest.json",
   "./assets/icons/icon-192.png",
-  "./assets/icons/icon-512.png"
+  "./assets/icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(APP_FILES);
-    })
+    }),
   );
 
   self.skipWaiting();
@@ -26,9 +26,9 @@ self.addEventListener("activate", (event) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => cacheName !== CACHE_NAME)
-          .map((cacheName) => caches.delete(cacheName))
+          .map((cacheName) => caches.delete(cacheName)),
       );
-    })
+    }),
   );
 
   self.clients.claim();
@@ -50,6 +50,6 @@ self.addEventListener("fetch", (event) => {
           });
         })
       );
-    })
+    }),
   );
 });

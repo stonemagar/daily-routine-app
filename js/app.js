@@ -5,23 +5,23 @@ const todayDate = document.getElementById("todayDate");
 const progressText = document.getElementById("progressText");
 const progressPercent = document.getElementById("progressPercent");
 const themeToggle = document.getElementById("themeToggle");
+const exportButton = document.getElementById("exportButton");
+const importButton = document.getElementById("importButton");
+const importFile = document.getElementById("importFile");
 
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
 
 let completionHistory =
   JSON.parse(localStorage.getItem("completionHistory")) || {};
 
-  let editingRoutineId = null;
+let editingRoutineId = null;
 
 function saveRoutines() {
   localStorage.setItem("routines", JSON.stringify(routines));
 }
 
 function saveCompletionHistory() {
-  localStorage.setItem(
-    "completionHistory",
-    JSON.stringify(completionHistory)
-  );
+  localStorage.setItem("completionHistory", JSON.stringify(completionHistory));
 }
 
 function getTodayKey() {
@@ -46,7 +46,7 @@ function isRoutineCompleted(routineId) {
 
 function getTodayName() {
   return new Date().toLocaleDateString("en-GB", {
-    weekday: "long"
+    weekday: "long",
   });
 }
 
@@ -55,7 +55,7 @@ function displayTodayDate() {
     weekday: "long",
     day: "numeric",
     month: "long",
-    year: "numeric"
+    year: "numeric",
   });
 }
 
@@ -70,23 +70,19 @@ function formatTime(time) {
 
   return date.toLocaleTimeString("en-GB", {
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   });
 }
 
 function getSelectedDay() {
-  return dayFilter.value === "Today"
-    ? getTodayName()
-    : dayFilter.value;
+  return dayFilter.value === "Today" ? getTodayName() : dayFilter.value;
 }
 
 function getFilteredRoutines() {
   const selectedDay = getSelectedDay();
 
   if (selectedDay === "All") {
-    return [...routines].sort((a, b) =>
-      a.startTime.localeCompare(b.startTime)
-    );
+    return [...routines].sort((a, b) => a.startTime.localeCompare(b.startTime));
   }
 
   return routines
@@ -109,7 +105,7 @@ function renderRoutines() {
       (routine) => `
 
         <article class="routine-item ${
-            isRoutineCompleted(routine.id) ? "completed" : ""
+          isRoutineCompleted(routine.id) ? "completed" : ""
         }">
           <input
             class="complete-checkbox"
@@ -150,7 +146,7 @@ function renderRoutines() {
             </button>
           </div>
         </article>
-      `
+      `,
     )
     .join("");
 
@@ -161,11 +157,10 @@ function updateProgress(selectedRoutines) {
   const total = selectedRoutines.length;
 
   const completed = selectedRoutines.filter((routine) =>
-    isRoutineCompleted(routine.id)
+    isRoutineCompleted(routine.id),
   ).length;
 
-  const percentage =
-    total === 0 ? 0 : Math.round((completed / total) * 100);
+  const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   progressText.textContent = `${completed} of ${total} completed`;
   progressPercent.textContent = `${percentage}%`;
@@ -173,14 +168,12 @@ function updateProgress(selectedRoutines) {
 
 function createRoutine(formData) {
   return {
-    id: crypto.randomUUID
-      ? crypto.randomUUID()
-      : String(Date.now()),
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
     title: formData.get("title").trim(),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
     category: formData.get("category"),
-    day: formData.get("day")
+    day: formData.get("day"),
   };
 }
 
@@ -208,7 +201,7 @@ routineForm.addEventListener("submit", function (event) {
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
     category: formData.get("category"),
-    day: formData.get("day")
+    day: formData.get("day"),
   };
 
   if (!validateRoutine(routineData)) {
@@ -220,9 +213,9 @@ routineForm.addEventListener("submit", function (event) {
       routine.id === editingRoutineId
         ? {
             ...routine,
-            ...routineData
+            ...routineData,
           }
-        : routine
+        : routine,
     );
 
     editingRoutineId = null;
@@ -245,7 +238,7 @@ function toggleRoutine(id) {
 
   if (completedIds.includes(id)) {
     completionHistory[todayKey] = completedIds.filter(
-      (routineId) => routineId !== id
+      (routineId) => routineId !== id,
     );
   } else {
     completionHistory[todayKey] = [...completedIds, id];
@@ -273,7 +266,7 @@ function editRoutine(id) {
 
   window.scrollTo({
     top: 0,
-    behavior: "smooth"
+    behavior: "smooth",
   });
 }
 
@@ -282,25 +275,23 @@ function deleteRoutine(id) {
 
   if (!routine) return;
 
-  const shouldDelete = confirm(
-    `Delete "${routine.title}" from your routine?`
-  );
+  const shouldDelete = confirm(`Delete "${routine.title}" from your routine?`);
 
   if (!shouldDelete) return;
 
   routines = routines.filter((routine) => routine.id !== id);
 
   Object.keys(completionHistory).forEach((date) => {
-  completionHistory[date] = completionHistory[date].filter(
-    (routineId) => routineId !== id
-  );
+    completionHistory[date] = completionHistory[date].filter(
+      (routineId) => routineId !== id,
+    );
 
-  if (completionHistory[date].length === 0) {
-    delete completionHistory[date];
-  }
-});
+    if (completionHistory[date].length === 0) {
+      delete completionHistory[date];
+    }
+  });
 
-saveCompletionHistory();
+  saveCompletionHistory();
 
   if (editingRoutineId === id) {
     editingRoutineId = null;
@@ -330,17 +321,11 @@ function loadTheme() {
 themeToggle.addEventListener("click", function () {
   document.body.classList.toggle("dark-mode");
 
-  const darkModeEnabled =
-    document.body.classList.contains("dark-mode");
+  const darkModeEnabled = document.body.classList.contains("dark-mode");
 
-  localStorage.setItem(
-    "theme",
-    darkModeEnabled ? "dark" : "light"
-  );
+  localStorage.setItem("theme", darkModeEnabled ? "dark" : "light");
 
-  themeToggle.textContent = darkModeEnabled
-    ? "Light mode"
-    : "Dark mode";
+  themeToggle.textContent = darkModeEnabled ? "Light mode" : "Dark mode";
 });
 
 dayFilter.addEventListener("change", renderRoutines);
@@ -380,7 +365,7 @@ function migrateOldCompletionData() {
   const existingIds = completionHistory[todayKey] || [];
 
   completionHistory[todayKey] = [
-    ...new Set([...existingIds, ...completedRoutineIds])
+    ...new Set([...existingIds, ...completedRoutineIds]),
   ];
 
   routines = routines.map(({ completed, ...routine }) => routine);
@@ -389,6 +374,107 @@ function migrateOldCompletionData() {
   saveCompletionHistory();
 }
 
+function exportBackup() {
+  const backupData = {
+    app: "Daily Routine App",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    routines,
+    completionHistory,
+    theme: localStorage.getItem("theme") || "light",
+  };
+
+  const backupBlob = new Blob([JSON.stringify(backupData, null, 2)], {
+    type: "application/json",
+  });
+
+  const backupUrl = URL.createObjectURL(backupBlob);
+  const downloadLink = document.createElement("a");
+
+  downloadLink.href = backupUrl;
+  downloadLink.download = `daily-routine-backup-${getTodayKey()}.json`;
+
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+
+  URL.revokeObjectURL(backupUrl);
+}
+
+function isValidBackup(data) {
+  return (
+    data &&
+    Array.isArray(data.routines) &&
+    typeof data.completionHistory === "object" &&
+    data.completionHistory !== null
+  );
+}
+
+function importBackup(file) {
+  const reader = new FileReader();
+
+  reader.addEventListener("load", () => {
+    try {
+      const backupData = JSON.parse(reader.result);
+
+      if (!isValidBackup(backupData)) {
+        alert("This backup file is not valid.");
+        return;
+      }
+
+      const shouldImport = confirm(
+        "Importing will replace your current routines and completion history. Continue?",
+      );
+
+      if (!shouldImport) {
+        return;
+      }
+
+      routines = backupData.routines;
+      completionHistory = backupData.completionHistory;
+
+      saveRoutines();
+      saveCompletionHistory();
+
+      if (backupData.theme === "dark") {
+        localStorage.setItem("theme", "dark");
+        document.body.classList.add("dark-mode");
+        themeToggle.textContent = "Light mode";
+      } else {
+        localStorage.setItem("theme", "light");
+        document.body.classList.remove("dark-mode");
+        themeToggle.textContent = "Dark mode";
+      }
+
+      renderRoutines();
+
+      alert("Backup imported successfully.");
+    } catch (error) {
+      console.error("Backup import failed:", error);
+      alert("The selected file could not be imported.");
+    } finally {
+      importFile.value = "";
+    }
+  });
+
+  reader.readAsText(file);
+}
+
+exportButton.addEventListener("click", exportBackup);
+
+importButton.addEventListener("click", () => {
+  importFile.click();
+});
+
+importFile.addEventListener("change", () => {
+  const selectedFile = importFile.files[0];
+
+  if (!selectedFile) {
+    return;
+  }
+
+  importBackup(selectedFile);
+});
 
 displayTodayDate();
 setDefaultDay();
