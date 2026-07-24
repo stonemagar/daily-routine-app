@@ -86,7 +86,7 @@ function getFilteredRoutines() {
   }
 
   return routines
-    .filter((routine) => routine.day === selectedDay)
+    .filter((routine) => routine.days.includes(selectedDay))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
@@ -120,7 +120,7 @@ function renderRoutines() {
 
             <p class="routine-meta">
               ${formatTime(routine.startTime)} to ${formatTime(routine.endTime)}
-              · ${routine.day}
+                · ${routine.days.join(", ")}
             </p>
 
             <span class="routine-category">
@@ -166,14 +166,14 @@ function updateProgress(selectedRoutines) {
   progressPercent.textContent = `${percentage}%`;
 }
 
-function createRoutine(formData) {
+function createRoutine(formData, selectedDays) {
   return {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
     title: formData.get("title").trim(),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
     category: formData.get("category"),
-    day: formData.get("day"),
+    days: selectedDays,
   };
 }
 
@@ -195,14 +195,26 @@ routineForm.addEventListener("submit", function (event) {
   event.preventDefault();
 
   const formData = new FormData(routineForm);
+  const selectedDays = getSelectedDaysFromForm();
 
   const routineData = {
     title: formData.get("title").trim(),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
     category: formData.get("category"),
-    day: formData.get("day"),
+    days: selectedDays,
   };
+
+  if (selectedDays.length === 0) {
+    showDayError(true);
+    return;
+  }
+
+  showDayError(false);
+
+  if (!validateRoutine(routineData)) {
+    return;
+  }
 
   if (!validateRoutine(routineData)) {
     return;
@@ -222,11 +234,13 @@ routineForm.addEventListener("submit", function (event) {
     routineForm.querySelector('button[type="submit"]').textContent =
       "Add routine";
   } else {
-    routines.push(createRoutine(formData));
+    routines.push(createRoutine(formData, selectedDays));
   }
 
   saveRoutines();
   routineForm.reset();
+  clearSelectedDays();
+  selectTodayByDefault();
   setDefaultDay();
   renderRoutines();
 });
@@ -475,6 +489,30 @@ importFile.addEventListener("change", () => {
 
   importBackup(selectedFile);
 });
+
+function getSelectedDaysFromForm() {
+  return Array.from(
+    routineForm.querySelectorAll('input[name="days"]:checked'),
+  ).map((checkbox) => checkbox.value);
+}
+
+function clearSelectedDays() {
+  routineForm.querySelectorAll('input[name="days"]').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+}
+
+function setSelectedDays(days) {
+  routineForm.querySelectorAll('input[name="days"]').forEach((checkbox) => {
+    checkbox.checked = days.includes(checkbox.value);
+  });
+}
+
+function showDayError(show) {
+  const dayError = document.getElementById("dayError");
+
+  dayError.classList.toggle("d-none", !show);
+}
 
 displayTodayDate();
 setDefaultDay();
