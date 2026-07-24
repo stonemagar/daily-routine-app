@@ -1,11 +1,13 @@
-const CACHE_NAME = "daily-routine-app-v1";
+const CACHE_NAME = "daily-routine-app-v2";
 
 const APP_FILES = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/app.js",
-  "./manifest.json"
+  "./manifest.json",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
