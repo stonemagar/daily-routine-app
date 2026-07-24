@@ -16,6 +16,10 @@ let completionHistory =
 
 let editingRoutineId = null;
 
+/* ------------------------------
+   Local storage
+------------------------------ */
+
 function saveRoutines() {
   localStorage.setItem("routines", JSON.stringify(routines));
 }
@@ -23,6 +27,10 @@ function saveRoutines() {
 function saveCompletionHistory() {
   localStorage.setItem("completionHistory", JSON.stringify(completionHistory));
 }
+
+/* ------------------------------
+   Date helpers
+------------------------------ */
 
 function getTodayKey() {
   const today = new Date();
@@ -32,16 +40,6 @@ function getTodayKey() {
   const day = String(today.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
-}
-
-function getTodayCompletedRoutineIds() {
-  const todayKey = getTodayKey();
-
-  return completionHistory[todayKey] || [];
-}
-
-function isRoutineCompleted(routineId) {
-  return getTodayCompletedRoutineIds().includes(routineId);
 }
 
 function getTodayName() {
@@ -60,7 +58,9 @@ function displayTodayDate() {
 }
 
 function formatTime(time) {
-  if (!time) return "";
+  if (!time) {
+    return "";
+  }
 
   const [hour, minute] = time.split(":");
   const date = new Date();
@@ -74,8 +74,98 @@ function formatTime(time) {
   });
 }
 
+/* ------------------------------
+   Completion tracking
+------------------------------ */
+
+function getTodayCompletedRoutineIds() {
+  const todayKey = getTodayKey();
+
+  return completionHistory[todayKey] || [];
+}
+
+function isRoutineCompleted(routineId) {
+  return getTodayCompletedRoutineIds().includes(routineId);
+}
+
+function toggleRoutine(id) {
+  const todayKey = getTodayKey();
+  const completedIds = completionHistory[todayKey] || [];
+
+  if (completedIds.includes(id)) {
+    completionHistory[todayKey] = completedIds.filter(
+      (routineId) => routineId !== id,
+    );
+  } else {
+    completionHistory[todayKey] = [...completedIds, id];
+  }
+
+  saveCompletionHistory();
+  renderRoutines();
+}
+
+/* ------------------------------
+   Weekday form helpers
+------------------------------ */
+
+function getSelectedDaysFromForm() {
+  return Array.from(
+    routineForm.querySelectorAll('input[name="days"]:checked'),
+  ).map((checkbox) => checkbox.value);
+}
+
+function clearSelectedDays() {
+  routineForm.querySelectorAll('input[name="days"]').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+}
+
+function setSelectedDays(days) {
+  routineForm.querySelectorAll('input[name="days"]').forEach((checkbox) => {
+    checkbox.checked = days.includes(checkbox.value);
+  });
+}
+
+function selectTodayByDefault() {
+  const todayName = getTodayName();
+
+  const todayCheckbox = routineForm.querySelector(
+    `input[name="days"][value="${todayName}"]`,
+  );
+
+  if (todayCheckbox) {
+    todayCheckbox.checked = true;
+  }
+}
+
+function showDayError(show) {
+  const dayError = document.getElementById("dayError");
+
+  if (!dayError) {
+    return;
+  }
+
+  dayError.classList.toggle("d-none", !show);
+}
+
+/* ------------------------------
+   Routine filtering
+------------------------------ */
+
 function getSelectedDay() {
   return dayFilter.value === "Today" ? getTodayName() : dayFilter.value;
+}
+
+function getRoutineDays(routine) {
+  if (Array.isArray(routine.days)) {
+    return routine.days;
+  }
+
+  if (typeof routine.day === "string") {
+    return [routine.day];
+  }
+
+  return [];
 }
 
 function getFilteredRoutines() {
@@ -86,9 +176,13 @@ function getFilteredRoutines() {
   }
 
   return routines
-    .filter((routine) => routine.days.includes(selectedDay))
+    .filter((routine) => getRoutineDays(routine).includes(selectedDay))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
+
+/* ------------------------------
+   Display routines
+------------------------------ */
 
 function renderRoutines() {
   const filteredRoutines = getFilteredRoutines();
@@ -96,31 +190,37 @@ function renderRoutines() {
   if (filteredRoutines.length === 0) {
     routineList.innerHTML =
       '<p class="empty-state">No routines found for this day.</p>';
+
     updateProgress([]);
     return;
   }
 
   routineList.innerHTML = filteredRoutines
-    .map(
-      (routine) => `
+    .map((routine) => {
+      const routineDays = getRoutineDays(routine);
+      const completed = isRoutineCompleted(routine.id);
 
-        <article class="routine-item ${
-          isRoutineCompleted(routine.id) ? "completed" : ""
-        }">
+      return `
+        <article class="routine-item ${completed ? "completed" : ""}">
           <input
             class="complete-checkbox"
             type="checkbox"
-            aria-label="Mark ${routine.title} complete"
-            ${isRoutineCompleted(routine.id) ? "checked" : ""}
+            aria-label="Mark ${escapeHtml(routine.title)} complete"
+            ${completed ? "checked" : ""}
             onchange="toggleRoutine('${routine.id}')"
           />
 
           <div>
-            <p class="routine-title">${escapeHtml(routine.title)}</p>
+            <p class="routine-title">
+              ${escapeHtml(routine.title)}
+            </p>
 
             <p class="routine-meta">
-              ${formatTime(routine.startTime)} to ${formatTime(routine.endTime)}
-                · ${routine.days.join(", ")}
+              ${formatTime(routine.startTime)}
+              to
+              ${formatTime(routine.endTime)}
+              ·
+              ${routineDays.join(", ")}
             </p>
 
             <span class="routine-category">
@@ -146,8 +246,8 @@ function renderRoutines() {
             </button>
           </div>
         </article>
-      `,
-    )
+      `;
+    })
     .join("");
 
   updateProgress(filteredRoutines);
@@ -163,12 +263,21 @@ function updateProgress(selectedRoutines) {
   const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   progressText.textContent = `${completed} of ${total} completed`;
+
   progressPercent.textContent = `${percentage}%`;
 }
 
+/* ------------------------------
+   Create and validate routines
+------------------------------ */
+
 function createRoutine(formData, selectedDays) {
   return {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    id:
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : String(Date.now()),
+
     title: formData.get("title").trim(),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
@@ -183,6 +292,11 @@ function validateRoutine(routine) {
     return false;
   }
 
+  if (!routine.startTime || !routine.endTime) {
+    alert("Please select both start and end times.");
+    return false;
+  }
+
   if (routine.endTime <= routine.startTime) {
     alert("End time must be later than start time.");
     return false;
@@ -190,6 +304,32 @@ function validateRoutine(routine) {
 
   return true;
 }
+
+function findScheduleConflict(newRoutine, ignoredRoutineId = null) {
+  return routines.find((existingRoutine) => {
+    if (existingRoutine.id === ignoredRoutineId) {
+      return false;
+    }
+
+    const existingDays = getRoutineDays(existingRoutine);
+    const newDays = Array.isArray(newRoutine.days) ? newRoutine.days : [];
+
+    const sharesDay = existingDays.some((day) => newDays.includes(day));
+
+    if (!sharesDay) {
+      return false;
+    }
+
+    return (
+      newRoutine.startTime < existingRoutine.endTime &&
+      newRoutine.endTime > existingRoutine.startTime
+    );
+  });
+}
+
+/* ------------------------------
+   Submit routine form
+------------------------------ */
 
 routineForm.addEventListener("submit", function (event) {
   event.preventDefault();
@@ -216,8 +356,23 @@ routineForm.addEventListener("submit", function (event) {
     return;
   }
 
-  if (!validateRoutine(routineData)) {
-    return;
+  const conflictingRoutine = findScheduleConflict(
+    routineData,
+    editingRoutineId,
+  );
+
+  if (conflictingRoutine) {
+    const shouldContinue = confirm(
+      `"${routineData.title}" overlaps with ` +
+        `"${conflictingRoutine.title}" from ` +
+        `${formatTime(conflictingRoutine.startTime)} to ` +
+        `${formatTime(conflictingRoutine.endTime)}. ` +
+        `Add it anyway?`,
+    );
+
+    if (!shouldContinue) {
+      return;
+    }
   }
 
   if (editingRoutineId) {
@@ -231,6 +386,7 @@ routineForm.addEventListener("submit", function (event) {
     );
 
     editingRoutineId = null;
+
     routineForm.querySelector('button[type="submit"]').textContent =
       "Add routine";
   } else {
@@ -238,40 +394,36 @@ routineForm.addEventListener("submit", function (event) {
   }
 
   saveRoutines();
+
   routineForm.reset();
   clearSelectedDays();
   selectTodayByDefault();
-  setDefaultDay();
+  showDayError(false);
+
   renderRoutines();
 });
 
-function toggleRoutine(id) {
-  const todayKey = getTodayKey();
-
-  const completedIds = completionHistory[todayKey] || [];
-
-  if (completedIds.includes(id)) {
-    completionHistory[todayKey] = completedIds.filter(
-      (routineId) => routineId !== id,
-    );
-  } else {
-    completionHistory[todayKey] = [...completedIds, id];
-  }
-
-  saveCompletionHistory();
-  renderRoutines();
-}
+/* ------------------------------
+   Edit routine
+------------------------------ */
 
 function editRoutine(id) {
   const routine = routines.find((item) => item.id === id);
 
-  if (!routine) return;
+  if (!routine) {
+    return;
+  }
 
   document.getElementById("title").value = routine.title;
+
   document.getElementById("startTime").value = routine.startTime;
+
   document.getElementById("endTime").value = routine.endTime;
+
   document.getElementById("category").value = routine.category;
-  document.getElementById("day").value = routine.day;
+
+  setSelectedDays(getRoutineDays(routine));
+  showDayError(false);
 
   editingRoutineId = id;
 
@@ -284,16 +436,24 @@ function editRoutine(id) {
   });
 }
 
+/* ------------------------------
+   Delete routine
+------------------------------ */
+
 function deleteRoutine(id) {
   const routine = routines.find((item) => item.id === id);
 
-  if (!routine) return;
+  if (!routine) {
+    return;
+  }
 
   const shouldDelete = confirm(`Delete "${routine.title}" from your routine?`);
 
-  if (!shouldDelete) return;
+  if (!shouldDelete) {
+    return;
+  }
 
-  routines = routines.filter((routine) => routine.id !== id);
+  routines = routines.filter((routineItem) => routineItem.id !== id);
 
   Object.keys(completionHistory).forEach((date) => {
     completionHistory[date] = completionHistory[date].filter(
@@ -309,8 +469,12 @@ function deleteRoutine(id) {
 
   if (editingRoutineId === id) {
     editingRoutineId = null;
+
     routineForm.reset();
-    setDefaultDay();
+    clearSelectedDays();
+    selectTodayByDefault();
+    showDayError(false);
+
     routineForm.querySelector('button[type="submit"]').textContent =
       "Add routine";
   }
@@ -319,9 +483,9 @@ function deleteRoutine(id) {
   renderRoutines();
 }
 
-function setDefaultDay() {
-  document.getElementById("day").value = getTodayName();
-}
+/* ------------------------------
+   Theme
+------------------------------ */
 
 function loadTheme() {
   const savedTheme = localStorage.getItem("theme");
@@ -329,6 +493,9 @@ function loadTheme() {
   if (savedTheme === "dark") {
     document.body.classList.add("dark-mode");
     themeToggle.textContent = "Light mode";
+  } else {
+    document.body.classList.remove("dark-mode");
+    themeToggle.textContent = "Dark mode";
   }
 }
 
@@ -342,10 +509,18 @@ themeToggle.addEventListener("click", function () {
   themeToggle.textContent = darkModeEnabled ? "Light mode" : "Dark mode";
 });
 
+/* ------------------------------
+   Day filter
+------------------------------ */
+
 dayFilter.addEventListener("change", renderRoutines);
 
+/* ------------------------------
+   HTML safety
+------------------------------ */
+
 function escapeHtml(value) {
-  return value
+  return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -353,18 +528,9 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./service-worker.js")
-      .then(() => {
-        console.log("Service worker registered.");
-      })
-      .catch((error) => {
-        console.error("Service worker registration failed:", error);
-      });
-  });
-}
+/* ------------------------------
+   Old-data migration
+------------------------------ */
 
 function migrateOldCompletionData() {
   const completedRoutineIds = routines
@@ -388,10 +554,37 @@ function migrateOldCompletionData() {
   saveCompletionHistory();
 }
 
+function migrateOldDayFormat() {
+  let changed = false;
+
+  routines = routines.map((routine) => {
+    if (!Array.isArray(routine.days) && typeof routine.day === "string") {
+      changed = true;
+
+      const { day, ...remainingRoutine } = routine;
+
+      return {
+        ...remainingRoutine,
+        days: [day],
+      };
+    }
+
+    return routine;
+  });
+
+  if (changed) {
+    saveRoutines();
+  }
+}
+
+/* ------------------------------
+   Export backup
+------------------------------ */
+
 function exportBackup() {
   const backupData = {
     app: "Daily Routine App",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     routines,
     completionHistory,
@@ -403,25 +596,48 @@ function exportBackup() {
   });
 
   const backupUrl = URL.createObjectURL(backupBlob);
+
   const downloadLink = document.createElement("a");
 
   downloadLink.href = backupUrl;
+
   downloadLink.download = `daily-routine-backup-${getTodayKey()}.json`;
 
   document.body.appendChild(downloadLink);
+
   downloadLink.click();
   downloadLink.remove();
 
   URL.revokeObjectURL(backupUrl);
 }
 
+/* ------------------------------
+   Import backup
+------------------------------ */
+
 function isValidBackup(data) {
-  return (
-    data &&
-    Array.isArray(data.routines) &&
-    typeof data.completionHistory === "object" &&
-    data.completionHistory !== null
-  );
+  if (
+    !data ||
+    !Array.isArray(data.routines) ||
+    typeof data.completionHistory !== "object" ||
+    data.completionHistory === null
+  ) {
+    return false;
+  }
+
+  return data.routines.every((routine) => {
+    const hasValidDays =
+      Array.isArray(routine.days) || typeof routine.day === "string";
+
+    return (
+      typeof routine.id === "string" &&
+      typeof routine.title === "string" &&
+      typeof routine.startTime === "string" &&
+      typeof routine.endTime === "string" &&
+      typeof routine.category === "string" &&
+      hasValidDays
+    );
+  });
 }
 
 function importBackup(file) {
@@ -447,6 +663,8 @@ function importBackup(file) {
       routines = backupData.routines;
       completionHistory = backupData.completionHistory;
 
+      migrateOldDayFormat();
+
       saveRoutines();
       saveCompletionHistory();
 
@@ -465,6 +683,7 @@ function importBackup(file) {
       alert("Backup imported successfully.");
     } catch (error) {
       console.error("Backup import failed:", error);
+
       alert("The selected file could not be imported.");
     } finally {
       importFile.value = "";
@@ -490,32 +709,30 @@ importFile.addEventListener("change", () => {
   importBackup(selectedFile);
 });
 
-function getSelectedDaysFromForm() {
-  return Array.from(
-    routineForm.querySelectorAll('input[name="days"]:checked'),
-  ).map((checkbox) => checkbox.value);
-}
+/* ------------------------------
+   Service worker
+------------------------------ */
 
-function clearSelectedDays() {
-  routineForm.querySelectorAll('input[name="days"]').forEach((checkbox) => {
-    checkbox.checked = false;
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./service-worker.js")
+      .then(() => {
+        console.log("Service worker registered.");
+      })
+      .catch((error) => {
+        console.error("Service worker registration failed:", error);
+      });
   });
 }
 
-function setSelectedDays(days) {
-  routineForm.querySelectorAll('input[name="days"]').forEach((checkbox) => {
-    checkbox.checked = days.includes(checkbox.value);
-  });
-}
-
-function showDayError(show) {
-  const dayError = document.getElementById("dayError");
-
-  dayError.classList.toggle("d-none", !show);
-}
+/* ------------------------------
+   Start application
+------------------------------ */
 
 displayTodayDate();
-setDefaultDay();
-loadTheme();
+migrateOldDayFormat();
 migrateOldCompletionData();
+selectTodayByDefault();
+loadTheme();
 renderRoutines();
