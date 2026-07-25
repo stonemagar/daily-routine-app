@@ -403,3 +403,59 @@ body.dark-mode .routine-category {
     flex-direction: column;
   }
 }
+
+/* ==================================================
+   ROUTINE SEARCH AND FILTER PANEL
+
+   Arranges the search box, day filter, category filter,
+   and clear button in a responsive grid.
+================================================== */
+
+.routine-filter-panel {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Keeps the clear button aligned with the filter fields */
+.filter-button-group {
+  min-width: 130px;
+}
+
+/* Makes the clear button fill its grid area */
+.filter-button-group .btn {
+  width: 100%;
+}
+
+/* Groups backup buttons below the filters */
+.backup-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+/* Use two columns when the screen becomes narrower */
+@media (max-width: 800px) {
+  .routine-filter-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Stack all filter controls on small mobile screens */
+@media (max-width: 520px) {
+  .routine-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .backup-toolbar {
+    justify-content: stretch;
+  }
+
+  .backup-toolbar .btn {
+    flex: 1;
+  }
+}

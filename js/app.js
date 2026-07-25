@@ -10,7 +10,10 @@ const importButton = document.getElementById("importButton");
 const importFile = document.getElementById("importFile");
 const submitButton = document.getElementById("submitButton");
 const cancelEditButton = document.getElementById("cancelEditButton");
-
+/* Search and filter controls from index.html */
+const searchInput = document.getElementById("searchInput");
+const categoryFilter = document.getElementById("categoryFilter");
+const clearFiltersButton = document.getElementById("clearFiltersButton");
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
 
 let completionHistory =
@@ -182,16 +185,47 @@ function getRoutineDays(routine) {
   return [];
 }
 
+/* ==================================================
+   FILTER AND SORT ROUTINES
+
+   This function applies three filters:
+   1. Selected weekday
+   2. Search text
+   3. Selected category
+
+   It then sorts matching routines by start time.
+================================================== */
+
 function getFilteredRoutines() {
   const selectedDay = getSelectedDay();
 
-  if (selectedDay === "All") {
-    return [...routines].sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }
+  // Remove extra spaces and use lowercase for case-insensitive searching
+  const searchText = searchInput.value.trim().toLowerCase();
+
+  // Read the selected category from the category filter
+  const selectedCategory = categoryFilter.value;
 
   return routines
-    .filter((routine) => getRoutineDays(routine).includes(selectedDay))
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    .filter((routine) => {
+      const routineDays = getRoutineDays(routine);
+
+      // Match every routine when "All days" is selected
+      const matchesDay =
+        selectedDay === "All" || routineDays.includes(selectedDay);
+
+      // Convert the routine name to lowercase before comparing it
+      const matchesSearch = routine.title.toLowerCase().includes(searchText);
+
+      // Match every category when "All categories" is selected
+      const matchesCategory =
+        selectedCategory === "All" || routine.category === selectedCategory;
+
+      // A routine must pass all three checks
+      return matchesDay && matchesSearch && matchesCategory;
+    })
+    .sort((firstRoutine, secondRoutine) =>
+      firstRoutine.startTime.localeCompare(secondRoutine.startTime),
+    );
 }
 
 /* ------------------------------
@@ -203,8 +237,7 @@ function renderRoutines() {
 
   if (filteredRoutines.length === 0) {
     routineList.innerHTML =
-      '<p class="empty-state">No routines found for this day.</p>';
-
+      '<p class="empty-state">No routines match the selected filters.</p>';
     updateProgress([]);
     return;
   }
@@ -519,11 +552,29 @@ themeToggle.addEventListener("click", function () {
   themeToggle.textContent = darkModeEnabled ? "Light mode" : "Dark mode";
 });
 
-/* ------------------------------
-   Day filter
------------------------------- */
+/* ==================================================
+   SEARCH AND FILTER EVENTS
 
+   Each event redraws the routine list immediately.
+================================================== */
+
+// Search while the user types
+searchInput.addEventListener("input", renderRoutines);
+
+// Filter when a different day is selected
 dayFilter.addEventListener("change", renderRoutines);
+
+// Filter when a different category is selected
+categoryFilter.addEventListener("change", renderRoutines);
+
+// Restore the default filters
+clearFiltersButton.addEventListener("click", () => {
+  searchInput.value = "";
+  dayFilter.value = "Today";
+  categoryFilter.value = "All";
+
+  renderRoutines();
+});
 
 /* ------------------------------
    HTML safety
