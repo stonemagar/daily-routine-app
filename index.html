@@ -104,12 +104,23 @@
              Allows the user to add or edit a routine
         =================================================== -->
 
-        <section class="routine-form-card">
+        <section id="routineFormCard" class="routine-form-card form-collapsed">
           <div class="section-heading">
             <div>
               <p class="eyebrow">New activity</p>
               <h2>Add routine</h2>
             </div>
+
+            <!-- Only displayed on mobile screens -->
+            <button
+              id="toggleRoutineFormButton"
+              class="form-toggle-button"
+              type="button"
+              aria-expanded="false"
+              aria-controls="routineForm"
+            >
+              + Add routine
+            </button>
           </div>
 
           <form id="routineForm">

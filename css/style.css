@@ -575,3 +575,203 @@ body.dark-mode .update-banner p {
     flex: 1;
   }
 }
+
+/* ==================================================
+   MOBILE COLLAPSIBLE ROUTINE FORM
+
+   On mobile, the form starts collapsed. The user can
+   open or close it using the Add routine button.
+================================================== */
+
+.form-toggle-button {
+  display: none;
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  padding: 9px 13px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.form-toggle-button:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+/* ==================================================
+   COMPACT ROUTINE CARDS
+================================================== */
+
+.routine-item {
+  align-items: flex-start;
+  padding: 14px;
+  gap: 12px;
+}
+
+.complete-checkbox {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.routine-content {
+  min-width: 0;
+}
+
+.routine-title {
+  margin: 0;
+  line-height: 1.3;
+}
+
+.routine-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.meta-separator {
+  color: var(--muted);
+}
+
+.routine-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.routine-badges .routine-category,
+.routine-badges .priority-badge {
+  margin: 0;
+}
+
+/*
+ * Only show two lines of notes. This prevents long
+ * notes from making each routine card too tall.
+ */
+.routine-notes {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 8px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ==================================================
+   THREE-DOT ROUTINE MENU
+================================================== */
+
+.routine-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.routine-menu summary {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1;
+  list-style: none;
+  cursor: pointer;
+}
+
+.routine-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.routine-menu summary::marker {
+  content: "";
+}
+
+.routine-menu[open] summary {
+  border-color: var(--primary);
+}
+
+.routine-menu-panel {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  width: 120px;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.routine-menu-button {
+  width: 100%;
+  border: none;
+  padding: 9px 10px;
+  background: transparent;
+  text-align: left;
+}
+
+.routine-menu-button:hover {
+  background: var(--surface-soft);
+}
+
+.routine-menu-button.delete-button {
+  color: var(--danger);
+}
+
+/* ==================================================
+   MOBILE LAYOUT
+================================================== */
+
+@media (max-width: 640px) {
+  .form-toggle-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /*
+   * The form is hidden only on mobile. On larger
+   * screens it remains visible normally.
+   */
+  .routine-form-card.form-collapsed #routineForm {
+    display: none;
+  }
+
+  .routine-form-card.form-collapsed .section-heading {
+    margin-bottom: 0;
+  }
+
+  .routine-item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .routine-title {
+    font-size: 0.95rem;
+  }
+
+  .routine-meta {
+    font-size: 0.8rem;
+  }
+
+  .routine-category,
+  .priority-badge {
+    padding: 3px 7px;
+    font-size: 0.7rem;
+  }
+
+  .routine-notes {
+    font-size: 0.82rem;
+  }
+}

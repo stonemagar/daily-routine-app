@@ -19,6 +19,11 @@ const clearFiltersButton = document.getElementById("clearFiltersButton");
 const updateBanner = document.getElementById("updateBanner");
 const updateNowButton = document.getElementById("updateNowButton");
 const dismissUpdateButton = document.getElementById("dismissUpdateButton");
+/* Mobile collapsible form controls */
+const routineFormCard = document.getElementById("routineFormCard");
+const toggleRoutineFormButton = document.getElementById(
+  "toggleRoutineFormButton",
+);
 
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
 
@@ -115,6 +120,40 @@ function toggleRoutine(id) {
   renderRoutines();
 }
 
+/* ==================================================
+   MOBILE ROUTINE FORM
+
+   The form remains visible on desktop but can be
+   collapsed on screens that are 640px wide or smaller.
+================================================== */
+
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 640px)").matches;
+}
+
+function setRoutineFormExpanded(expanded) {
+  if (!routineFormCard || !toggleRoutineFormButton) {
+    return;
+  }
+
+  routineFormCard.classList.toggle("form-collapsed", !expanded);
+
+  toggleRoutineFormButton.setAttribute("aria-expanded", String(expanded));
+
+  toggleRoutineFormButton.textContent = expanded
+    ? "Hide form"
+    : "+ Add routine";
+}
+
+if (toggleRoutineFormButton) {
+  toggleRoutineFormButton.addEventListener("click", () => {
+    const currentlyExpanded =
+      toggleRoutineFormButton.getAttribute("aria-expanded") === "true";
+
+    setRoutineFormExpanded(!currentlyExpanded);
+  });
+}
+
 function resetRoutineForm() {
   editingRoutineId = null;
 
@@ -125,6 +164,11 @@ function resetRoutineForm() {
 
   submitButton.textContent = "Add routine";
   cancelEditButton.classList.add("d-none");
+
+  /* Close the form after saving or cancelling on mobile */
+  if (isMobileLayout()) {
+    setRoutineFormExpanded(false);
+  }
 }
 
 /* ------------------------------
@@ -240,6 +284,27 @@ function getFilteredRoutines() {
 }
 
 /* ==================================================
+   FORMAT ROUTINE DAYS
+
+   Short weekday names use less space inside mobile
+   routine cards.
+================================================== */
+
+function formatRoutineDays(days) {
+  const weekdayNames = {
+    Monday: "Mon",
+    Tuesday: "Tue",
+    Wednesday: "Wed",
+    Thursday: "Thu",
+    Friday: "Fri",
+    Saturday: "Sat",
+    Sunday: "Sun",
+  };
+
+  return days.map((day) => weekdayNames[day] || day).join(", ");
+}
+
+/* ==================================================
    GET PRIORITY CSS CLASS
 
    Converts a priority such as "High" into a CSS class
@@ -275,70 +340,94 @@ function renderRoutines() {
       /* Older routines may not contain these new properties */
       const routineNotes = routine.notes || "";
       const routinePriority = routine.priority || "Medium";
-
+      const routineDayText = formatRoutineDays(routineDays);
       return `
-        <article class="routine-item ${completed ? "completed" : ""}">
-          <input
-            class="complete-checkbox"
-            type="checkbox"
-            aria-label="Mark ${escapeHtml(routine.title)} complete"
-            ${completed ? "checked" : ""}
-            onchange="toggleRoutine('${routine.id}')"
-          />
+  <article class="routine-item ${completed ? "completed" : ""}">
+    <input
+      class="complete-checkbox"
+      type="checkbox"
+      aria-label="Mark ${escapeHtml(routine.title)} complete"
+      ${completed ? "checked" : ""}
+      onchange="toggleRoutine('${routine.id}')"
+    />
 
-          <div>
-            <p class="routine-title">
-              ${escapeHtml(routine.title)}
-            </p>
+    <div class="routine-content">
+      <p class="routine-title">
+        ${escapeHtml(routine.title)}
+      </p>
 
-            <p class="routine-meta">
-              ${formatTime(routine.startTime)}
-              to
-              ${formatTime(routine.endTime)}
-              ·
-              ${routineDays.join(", ")}
-            </p>
+      <p class="routine-meta">
+        <span>
+          ${formatTime(routine.startTime)}
+          –
+          ${formatTime(routine.endTime)}
+        </span>
 
-            <span class="routine-category">
-              ${escapeHtml(routine.category)}
-            </span>
+        <span class="meta-separator" aria-hidden="true">·</span>
 
-            <span
-             class="priority-badge ${getPriorityClass(routinePriority)}"
-              >
-              ${escapeHtml(routinePriority)} priority
-            </span>
+        <span>${escapeHtml(routineDayText)}</span>
+      </p>
 
-              ${
-                routineNotes
-                  ? `
-                    <p class="routine-notes">
-                      ${escapeHtml(routineNotes)}
-                    </p>
-                  `
-                  : ""
-              }
-          </div>
+      <div class="routine-badges">
+        <span class="routine-category">
+          ${escapeHtml(routine.category)}
+        </span>
 
-          <div class="routine-actions">
-            <button
-              class="action-button"
-              type="button"
-              onclick="editRoutine('${routine.id}')"
+        <span
+          class="priority-badge ${getPriorityClass(routinePriority)}"
+        >
+          ${escapeHtml(routinePriority)}
+        </span>
+      </div>
+
+      ${
+        routineNotes
+          ? `
+            <p
+              class="routine-notes"
+              title="${escapeHtml(routineNotes)}"
             >
-              Edit
-            </button>
+              ${escapeHtml(routineNotes)}
+            </p>
+          `
+          : ""
+      }
+    </div>
 
-            <button
-              class="action-button delete-button"
-              type="button"
-              onclick="deleteRoutine('${routine.id}')"
-            >
-              Delete
-            </button>
-          </div>
-        </article>
-      `;
+    <details class="routine-menu">
+      <summary
+        aria-label="Actions for ${escapeHtml(routine.title)}"
+        title="Routine actions"
+      >
+        ⋮
+      </summary>
+
+      <div class="routine-menu-panel">
+        <button
+          class="action-button routine-menu-button"
+          type="button"
+          onclick="
+            this.closest('details').removeAttribute('open');
+            editRoutine('${routine.id}');
+          "
+        >
+          Edit
+        </button>
+
+        <button
+          class="action-button routine-menu-button delete-button"
+          type="button"
+          onclick="
+            this.closest('details').removeAttribute('open');
+            deleteRoutine('${routine.id}');
+          "
+        >
+          Delete
+        </button>
+      </div>
+    </details>
+  </article>
+`;
     })
     .join("");
 
@@ -503,10 +592,11 @@ routineForm.addEventListener("submit", function (event) {
 
   saveRoutines();
 
-  routineForm.reset();
-  clearSelectedDays();
-  selectTodayByDefault();
-  showDayError(false);
+  /*
+   * Reset also hides the Cancel button and collapses
+   * the form on mobile.
+   */
+  resetRoutineForm();
 
   renderRoutines();
 });
@@ -539,6 +629,9 @@ function editRoutine(id) {
   showDayError(false);
 
   editingRoutineId = id;
+
+  /* Open the form automatically when editing on mobile */
+  setRoutineFormExpanded(true);
 
   submitButton.textContent = "Update routine";
   cancelEditButton.classList.remove("d-none");
