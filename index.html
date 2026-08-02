@@ -88,14 +88,29 @@
         =================================================== -->
 
         <section class="summary-card">
-          <div>
-            <p>Today</p>
-            <h2 id="todayDate">Loading date...</h2>
+          <div class="summary-top-row">
+            <div>
+              <p>Today</p>
+              <h2 id="todayDate">Loading date...</h2>
+            </div>
+
+            <div class="progress-box">
+              <span id="progressText">0 of 0 completed</span>
+              <strong id="progressPercent">0%</strong>
+            </div>
           </div>
 
-          <div class="progress-box">
-            <span id="progressText">0 of 0 completed</span>
-            <strong id="progressPercent">0%</strong>
+          <!-- Visual indication of today's completion percentage -->
+          <div
+            id="progressTrack"
+            class="progress-track"
+            role="progressbar"
+            aria-label="Routine completion"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <span id="progressBarFill" class="progress-bar-fill"></span>
           </div>
         </section>
 
@@ -372,6 +387,17 @@
         </section>
       </main>
     </div>
+
+    <!-- Opens the routine form from anywhere on a mobile screen -->
+    <button
+      id="floatingAddButton"
+      class="floating-add-button"
+      type="button"
+      aria-label="Add a new routine"
+      title="Add routine"
+    >
+      +
+    </button>
 
     <!-- Bootstrap JavaScript components -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

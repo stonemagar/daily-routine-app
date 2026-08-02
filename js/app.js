@@ -4,6 +4,8 @@ const dayFilter = document.getElementById("dayFilter");
 const todayDate = document.getElementById("todayDate");
 const progressText = document.getElementById("progressText");
 const progressPercent = document.getElementById("progressPercent");
+const progressTrack = document.getElementById("progressTrack");
+const progressBarFill = document.getElementById("progressBarFill");
 const themeToggle = document.getElementById("themeToggle");
 const exportButton = document.getElementById("exportButton");
 const importButton = document.getElementById("importButton");
@@ -24,6 +26,7 @@ const routineFormCard = document.getElementById("routineFormCard");
 const toggleRoutineFormButton = document.getElementById(
   "toggleRoutineFormButton",
 );
+const floatingAddButton = document.getElementById("floatingAddButton");
 
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
 
@@ -143,6 +146,14 @@ function setRoutineFormExpanded(expanded) {
   toggleRoutineFormButton.textContent = expanded
     ? "Hide form"
     : "+ Add routine";
+
+  /*
+   * Hide the floating button while the form is open,
+   * preventing two Add buttons from appearing together.
+   */
+  if (floatingAddButton) {
+    floatingAddButton.classList.toggle("is-hidden", expanded);
+  }
 }
 
 if (toggleRoutineFormButton) {
@@ -151,6 +162,29 @@ if (toggleRoutineFormButton) {
       toggleRoutineFormButton.getAttribute("aria-expanded") === "true";
 
     setRoutineFormExpanded(!currentlyExpanded);
+  });
+}
+
+/*
+ * Open the form and move the user directly to it when
+ * the floating Add button is selected.
+ */
+if (floatingAddButton) {
+  floatingAddButton.addEventListener("click", () => {
+    setRoutineFormExpanded(true);
+
+    routineFormCard.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    /*
+     * Focus the activity field after the scrolling
+     * animation has had time to begin.
+     */
+    window.setTimeout(() => {
+      document.getElementById("title").focus();
+    }, 400);
   });
 }
 
@@ -325,6 +359,12 @@ function getPriorityClass(priority) {
 function renderRoutines() {
   const filteredRoutines = getFilteredRoutines();
 
+  /*
+   * Weekday names are useful only when routines from
+   * all days are displayed together.
+   */
+  const showRoutineDays = dayFilter.value === "All";
+
   if (filteredRoutines.length === 0) {
     routineList.innerHTML =
       '<p class="empty-state">No routines match the selected filters.</p>';
@@ -363,9 +403,14 @@ function renderRoutines() {
           ${formatTime(routine.endTime)}
         </span>
 
-        <span class="meta-separator" aria-hidden="true">·</span>
-
-        <span>${escapeHtml(routineDayText)}</span>
+        ${
+          showRoutineDays
+            ? `
+      <span class="meta-separator" aria-hidden="true">·</span>
+      <span>${escapeHtml(routineDayText)}</span>
+    `
+            : ""
+        }
       </p>
 
       <div class="routine-badges">
@@ -444,8 +489,19 @@ function updateProgress(selectedRoutines) {
   const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   progressText.textContent = `${completed} of ${total} completed`;
-
   progressPercent.textContent = `${percentage}%`;
+
+  /*
+   * Update both the visual bar and its accessibility
+   * value whenever routine completion changes.
+   */
+  if (progressBarFill) {
+    progressBarFill.style.width = `${percentage}%`;
+  }
+
+  if (progressTrack) {
+    progressTrack.setAttribute("aria-valuenow", String(percentage));
+  }
 }
 
 /* ==================================================
