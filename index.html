@@ -22,6 +22,12 @@
       rel="stylesheet"
     />
 
+    <!-- Consistent icons used throughout the application -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
     <!-- Custom styles for this application -->
     <link rel="stylesheet" href="css/style.css" />
 
@@ -45,8 +51,14 @@
           <h1>My Routine</h1>
         </div>
 
-        <button id="themeToggle" class="icon-button" type="button">
-          Dark mode
+        <button
+          id="themeToggle"
+          class="icon-button"
+          type="button"
+          aria-label="Change colour theme"
+        >
+          <i id="themeIcon" class="bi bi-moon-stars" aria-hidden="true"></i>
+          <span id="themeButtonText">Dark mode</span>
         </button>
       </header>
 
@@ -87,7 +99,7 @@
              Displays the current date and completion percentage
         =================================================== -->
 
-        <section class="summary-card">
+        <section id="todaySection" class="summary-card">
           <div class="summary-top-row">
             <div>
               <p>Today</p>
@@ -100,7 +112,6 @@
             </div>
           </div>
 
-          <!-- Visual indication of today's completion percentage -->
           <div
             id="progressTrack"
             class="progress-track"
@@ -119,22 +130,31 @@
              Allows the user to add or edit a routine
         =================================================== -->
 
-        <section id="routineFormCard" class="routine-form-card form-collapsed">
-          <div class="section-heading">
+        <!-- Dark background shown behind the mobile bottom sheet -->
+        <div id="formBackdrop" class="sheet-backdrop" hidden></div>
+
+        <section
+          id="routineFormCard"
+          class="routine-form-card form-collapsed"
+          aria-labelledby="routineFormHeading"
+        >
+          <!-- Small handle displayed at the top of the mobile sheet -->
+          <div class="sheet-handle" aria-hidden="true"></div>
+
+          <div class="section-heading form-sheet-heading">
             <div>
               <p class="eyebrow">New activity</p>
-              <h2>Add routine</h2>
+              <h2 id="routineFormHeading">Add routine</h2>
             </div>
 
-            <!-- Only displayed on mobile screens -->
+            <!-- Visible only when the form is a mobile bottom sheet -->
             <button
-              id="toggleRoutineFormButton"
-              class="form-toggle-button"
+              id="closeRoutineFormButton"
+              class="sheet-close-button"
               type="button"
-              aria-expanded="false"
-              aria-controls="routineForm"
+              aria-label="Close routine form"
             >
-              + Add routine
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
             </button>
           </div>
 
@@ -284,7 +304,7 @@
              Displays, searches, and filters saved routines
         =================================================== -->
 
-        <section class="routine-list-card">
+        <section id="routinesSection" class="routine-list-card">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Schedule</p>
@@ -348,19 +368,21 @@
                 class="btn btn-outline-secondary"
                 type="button"
               >
-                Clear filters
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                <span>Clear filters</span>
               </button>
             </div>
           </div>
 
           <!-- Backup controls -->
-          <div class="backup-toolbar">
+          <div id="backupSection" class="backup-toolbar">
             <button
               id="exportButton"
               class="btn btn-outline-primary btn-sm"
               type="button"
             >
-              Export backup
+              <i class="bi bi-download" aria-hidden="true"></i>
+              <span>Export backup</span>
             </button>
 
             <button
@@ -368,7 +390,8 @@
               class="btn btn-outline-secondary btn-sm"
               type="button"
             >
-              Import backup
+              <i class="bi bi-upload" aria-hidden="true"></i>
+              <span>Import backup</span>
             </button>
 
             <!-- Hidden file input opened by the Import button -->
@@ -388,16 +411,52 @@
       </main>
     </div>
 
-    <!-- Opens the routine form from anywhere on a mobile screen -->
-    <button
-      id="floatingAddButton"
-      class="floating-add-button"
-      type="button"
-      aria-label="Add a new routine"
-      title="Add routine"
-    >
-      +
-    </button>
+    <!-- ==================================================
+         MOBILE BOTTOM NAVIGATION
+
+         Provides quick access to the main app sections.
+    =================================================== -->
+
+    <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+      <button
+        class="mobile-nav-button is-active"
+        type="button"
+        data-scroll-target="todaySection"
+      >
+        <i class="bi bi-house-door" aria-hidden="true"></i>
+        <span>Today</span>
+      </button>
+
+      <button
+        id="bottomAddButton"
+        class="mobile-nav-button mobile-nav-add"
+        type="button"
+        aria-label="Add a new routine"
+      >
+        <span class="mobile-nav-add-icon">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        </span>
+        <span>Add</span>
+      </button>
+
+      <button
+        class="mobile-nav-button"
+        type="button"
+        data-scroll-target="routinesSection"
+      >
+        <i class="bi bi-list-check" aria-hidden="true"></i>
+        <span>Routines</span>
+      </button>
+
+      <button
+        class="mobile-nav-button"
+        type="button"
+        data-scroll-target="backupSection"
+      >
+        <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i>
+        <span>Backup</span>
+      </button>
+    </nav>
 
     <!-- Bootstrap JavaScript components -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

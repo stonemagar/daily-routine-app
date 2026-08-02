@@ -7,6 +7,8 @@ const progressPercent = document.getElementById("progressPercent");
 const progressTrack = document.getElementById("progressTrack");
 const progressBarFill = document.getElementById("progressBarFill");
 const themeToggle = document.getElementById("themeToggle");
+const themeIcon = document.getElementById("themeIcon");
+const themeButtonText = document.getElementById("themeButtonText");
 const exportButton = document.getElementById("exportButton");
 const importButton = document.getElementById("importButton");
 const importFile = document.getElementById("importFile");
@@ -21,11 +23,21 @@ const clearFiltersButton = document.getElementById("clearFiltersButton");
 const updateBanner = document.getElementById("updateBanner");
 const updateNowButton = document.getElementById("updateNowButton");
 const dismissUpdateButton = document.getElementById("dismissUpdateButton");
-/* Mobile collapsible form controls */
+
+/* Mobile bottom-sheet form controls */
 const routineFormCard = document.getElementById("routineFormCard");
-const toggleRoutineFormButton = document.getElementById(
-  "toggleRoutineFormButton",
+const routineFormHeading = document.getElementById("routineFormHeading");
+const closeRoutineFormButton = document.getElementById(
+  "closeRoutineFormButton",
 );
+const formBackdrop = document.getElementById("formBackdrop");
+const bottomAddButton = document.getElementById("bottomAddButton");
+
+/* Mobile navigation buttons that scroll to page sections */
+const mobileNavButtons = document.querySelectorAll(
+  ".mobile-nav-button[data-scroll-target]",
+);
+
 const floatingAddButton = document.getElementById("floatingAddButton");
 
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
@@ -124,10 +136,13 @@ function toggleRoutine(id) {
 }
 
 /* ==================================================
-   MOBILE ROUTINE FORM
+   RESPONSIVE ROUTINE FORM
 
-   The form remains visible on desktop but can be
-   collapsed on screens that are 640px wide or smaller.
+   Desktop:
+   The form remains inside the normal page.
+
+   Mobile:
+   The form opens as a bottom sheet above the page.
 ================================================== */
 
 function isMobileLayout() {
@@ -135,35 +150,106 @@ function isMobileLayout() {
 }
 
 function setRoutineFormExpanded(expanded) {
-  if (!routineFormCard || !toggleRoutineFormButton) {
+  if (!routineFormCard) {
     return;
   }
 
+  /*
+   * On desktop the form always remains in the page.
+   * The expanded and collapsed classes only control
+   * the mobile bottom-sheet presentation.
+   */
+  if (!isMobileLayout()) {
+    routineFormCard.classList.remove("form-expanded");
+    document.body.classList.remove("sheet-open");
+
+    if (formBackdrop) {
+      formBackdrop.hidden = true;
+    }
+
+    return;
+  }
+
+  routineFormCard.classList.toggle("form-expanded", expanded);
   routineFormCard.classList.toggle("form-collapsed", !expanded);
 
-  toggleRoutineFormButton.setAttribute("aria-expanded", String(expanded));
+  document.body.classList.toggle("sheet-open", expanded);
 
-  toggleRoutineFormButton.textContent = expanded
-    ? "Hide form"
-    : "+ Add routine";
-
-  /*
-   * Hide the floating button while the form is open,
-   * preventing two Add buttons from appearing together.
-   */
-  if (floatingAddButton) {
-    floatingAddButton.classList.toggle("is-hidden", expanded);
+  if (formBackdrop) {
+    formBackdrop.hidden = !expanded;
   }
 }
 
-if (toggleRoutineFormButton) {
-  toggleRoutineFormButton.addEventListener("click", () => {
-    const currentlyExpanded =
-      toggleRoutineFormButton.getAttribute("aria-expanded") === "true";
+function openRoutineForm(options = {}) {
+  const { focusTitle = true } = options;
 
-    setRoutineFormExpanded(!currentlyExpanded);
+  setRoutineFormExpanded(true);
+
+  if (!isMobileLayout()) {
+    routineFormCard.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  if (focusTitle) {
+    window.setTimeout(
+      () => {
+        document.getElementById("title").focus();
+      },
+      isMobileLayout() ? 300 : 500,
+    );
+  }
+}
+
+function closeRoutineForm() {
+  if (isMobileLayout()) {
+    setRoutineFormExpanded(false);
+  }
+}
+
+if (bottomAddButton) {
+  bottomAddButton.addEventListener("click", () => {
+    /*
+     * Clear a previous edit before creating a completely
+     * new routine from the navigation button.
+     */
+    resetRoutineForm();
+    openRoutineForm();
   });
 }
+
+if (closeRoutineFormButton) {
+  closeRoutineFormButton.addEventListener("click", closeRoutineForm);
+}
+
+if (formBackdrop) {
+  formBackdrop.addEventListener("click", closeRoutineForm);
+}
+
+/* Allow keyboard users to close the sheet with Escape */
+document.addEventListener("keydown", (event) => {
+  if (
+    event.key === "Escape" &&
+    routineFormCard.classList.contains("form-expanded")
+  ) {
+    closeRoutineForm();
+  }
+});
+
+/*
+ * Reset bottom-sheet state when switching between
+ * mobile and desktop layouts.
+ */
+window.addEventListener("resize", () => {
+  if (!isMobileLayout()) {
+    document.body.classList.remove("sheet-open");
+
+    if (formBackdrop) {
+      formBackdrop.hidden = true;
+    }
+  }
+});
 
 /*
  * Open the form and move the user directly to it when
@@ -198,6 +284,10 @@ function resetRoutineForm() {
 
   submitButton.textContent = "Add routine";
   cancelEditButton.classList.add("d-none");
+
+  if (routineFormHeading) {
+    routineFormHeading.textContent = "Add routine";
+  }
 
   /* Close the form after saving or cancelling on mobile */
   if (isMobileLayout()) {
@@ -361,13 +451,63 @@ function renderRoutines() {
 
   /*
    * Weekday names are useful only when routines from
-   * all days are displayed together.
+   * every weekday are displayed together.
    */
   const showRoutineDays = dayFilter.value === "All";
 
   if (filteredRoutines.length === 0) {
-    routineList.innerHTML =
-      '<p class="empty-state">No routines match the selected filters.</p>';
+    const noRoutinesExist = routines.length === 0;
+
+    routineList.innerHTML = noRoutinesExist
+      ? `
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+        </div>
+
+        <h3>Create your first routine</h3>
+
+        <p>
+          Add an activity, choose its time and select the days
+          when it should appear.
+        </p>
+
+        <button
+          class="primary-button empty-state-button"
+          type="button"
+          onclick="openRoutineForm()"
+        >
+          <i class="bi bi-plus-lg" aria-hidden="true"></i>
+          <span>Add routine</span>
+        </button>
+      </div>
+    `
+      : `
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="bi bi-search" aria-hidden="true"></i>
+        </div>
+
+        <h3>No matching routines</h3>
+
+        <p>
+          Change your search, selected day or category filter.
+        </p>
+
+        <button
+          class="btn btn-outline-secondary empty-state-button"
+          type="button"
+          onclick="clearRoutineFilters()"
+        >
+          <i
+            class="bi bi-arrow-counterclockwise"
+            aria-hidden="true"
+          ></i>
+          <span>Clear filters</span>
+        </button>
+      </div>
+    `;
+
     updateProgress([]);
     return;
   }
@@ -406,8 +546,14 @@ function renderRoutines() {
         ${
           showRoutineDays
             ? `
+      ${
+        showRoutineDays
+          ? `
       <span class="meta-separator" aria-hidden="true">·</span>
       <span>${escapeHtml(routineDayText)}</span>
+    `
+          : ""
+      }
     `
             : ""
         }
@@ -444,7 +590,7 @@ function renderRoutines() {
         aria-label="Actions for ${escapeHtml(routine.title)}"
         title="Routine actions"
       >
-        ⋮
+        <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
       </summary>
 
       <div class="routine-menu-panel">
@@ -456,7 +602,8 @@ function renderRoutines() {
             editRoutine('${routine.id}');
           "
         >
-          Edit
+          <i class="bi bi-pencil" aria-hidden="true"></i>
+<span>Edit</span>
         </button>
 
         <button
@@ -467,7 +614,8 @@ function renderRoutines() {
             deleteRoutine('${routine.id}');
           "
         >
-          Delete
+          <i class="bi bi-trash3" aria-hidden="true"></i>
+<span>Delete</span>
         </button>
       </div>
     </details>
@@ -491,10 +639,6 @@ function updateProgress(selectedRoutines) {
   progressText.textContent = `${completed} of ${total} completed`;
   progressPercent.textContent = `${percentage}%`;
 
-  /*
-   * Update both the visual bar and its accessibility
-   * value whenever routine completion changes.
-   */
   if (progressBarFill) {
     progressBarFill.style.width = `${percentage}%`;
   }
@@ -686,10 +830,15 @@ function editRoutine(id) {
 
   editingRoutineId = id;
 
-  /* Open the form automatically when editing on mobile */
-  setRoutineFormExpanded(true);
+  /* Open the mobile bottom sheet or scroll to the desktop form */
+  openRoutineForm({
+    focusTitle: false,
+  });
 
   submitButton.textContent = "Update routine";
+  if (routineFormHeading) {
+    routineFormHeading.textContent = "Edit routine";
+  }
   cancelEditButton.classList.remove("d-none");
 
   window.scrollTo({
@@ -741,16 +890,22 @@ function deleteRoutine(id) {
    Theme
 ------------------------------ */
 
+function updateThemeButton(darkModeEnabled) {
+  if (themeButtonText) {
+    themeButtonText.textContent = darkModeEnabled ? "Light mode" : "Dark mode";
+  }
+
+  if (themeIcon) {
+    themeIcon.className = darkModeEnabled ? "bi bi-sun" : "bi bi-moon-stars";
+  }
+}
+
 function loadTheme() {
   const savedTheme = localStorage.getItem("theme");
+  const darkModeEnabled = savedTheme === "dark";
 
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark-mode");
-    themeToggle.textContent = "Light mode";
-  } else {
-    document.body.classList.remove("dark-mode");
-    themeToggle.textContent = "Dark mode";
-  }
+  document.body.classList.toggle("dark-mode", darkModeEnabled);
+  updateThemeButton(darkModeEnabled);
 }
 
 themeToggle.addEventListener("click", function () {
@@ -760,7 +915,7 @@ themeToggle.addEventListener("click", function () {
 
   localStorage.setItem("theme", darkModeEnabled ? "dark" : "light");
 
-  themeToggle.textContent = darkModeEnabled ? "Light mode" : "Dark mode";
+  updateThemeButton(darkModeEnabled);
 });
 
 /* ==================================================
@@ -779,12 +934,43 @@ dayFilter.addEventListener("change", renderRoutines);
 categoryFilter.addEventListener("change", renderRoutines);
 
 // Restore the default filters
-clearFiltersButton.addEventListener("click", () => {
+function clearRoutineFilters() {
   searchInput.value = "";
   dayFilter.value = "Today";
   categoryFilter.value = "All";
 
   renderRoutines();
+}
+
+clearFiltersButton.addEventListener("click", clearRoutineFilters);
+
+/* ==================================================
+   MOBILE BOTTOM NAVIGATION
+
+   Scroll to the selected section and visually mark
+   the most recently selected navigation item.
+================================================== */
+
+mobileNavButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const targetId = button.dataset.scrollTarget;
+    const targetElement = document.getElementById(targetId);
+
+    if (!targetElement) {
+      return;
+    }
+
+    mobileNavButtons.forEach((navButton) => {
+      navButton.classList.remove("is-active");
+    });
+
+    button.classList.add("is-active");
+
+    targetElement.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
 });
 
 /* ------------------------------
