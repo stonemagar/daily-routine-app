@@ -213,8 +213,13 @@ function getFilteredRoutines() {
       const matchesDay =
         selectedDay === "All" || routineDays.includes(selectedDay);
 
-      // Convert the routine name to lowercase before comparing it
-      const matchesSearch = routine.title.toLowerCase().includes(searchText);
+      /* Search both the routine title and optional notes */
+      const searchableText = `
+        ${routine.title}
+        ${routine.notes || ""}
+      `.toLowerCase();
+
+      const matchesSearch = searchableText.includes(searchText);
 
       // Match every category when "All categories" is selected
       const matchesCategory =
@@ -226,6 +231,20 @@ function getFilteredRoutines() {
     .sort((firstRoutine, secondRoutine) =>
       firstRoutine.startTime.localeCompare(secondRoutine.startTime),
     );
+}
+
+/* ==================================================
+   GET PRIORITY CSS CLASS
+
+   Converts a priority such as "High" into a CSS class
+   such as "priority-high".
+================================================== */
+
+function getPriorityClass(priority) {
+  const safePriority =
+    typeof priority === "string" ? priority.toLowerCase() : "medium";
+
+  return `priority-${safePriority}`;
 }
 
 /* ------------------------------
@@ -246,6 +265,10 @@ function renderRoutines() {
     .map((routine) => {
       const routineDays = getRoutineDays(routine);
       const completed = isRoutineCompleted(routine.id);
+
+      /* Older routines may not contain these new properties */
+      const routineNotes = routine.notes || "";
+      const routinePriority = routine.priority || "Medium";
 
       return `
         <article class="routine-item ${completed ? "completed" : ""}">
@@ -273,6 +296,22 @@ function renderRoutines() {
             <span class="routine-category">
               ${escapeHtml(routine.category)}
             </span>
+
+            <span
+             class="priority-badge ${getPriorityClass(routinePriority)}"
+              >
+              ${escapeHtml(routinePriority)} priority
+            </span>
+
+              ${
+                routineNotes
+                  ? `
+                    <p class="routine-notes">
+                      ${escapeHtml(routineNotes)}
+                    </p>
+                  `
+                  : ""
+              }
           </div>
 
           <div class="routine-actions">
@@ -314,9 +353,12 @@ function updateProgress(selectedRoutines) {
   progressPercent.textContent = `${percentage}%`;
 }
 
-/* ------------------------------
-   Create and validate routines
------------------------------- */
+/* ==================================================
+   CREATE A ROUTINE OBJECT
+
+   Converts the form values into one routine object.
+   The object is then saved inside the routines array.
+================================================== */
 
 function createRoutine(formData, selectedDays) {
   return {
@@ -330,6 +372,12 @@ function createRoutine(formData, selectedDays) {
     endTime: formData.get("endTime"),
     category: formData.get("category"),
     days: selectedDays,
+
+    // Notes are optional, so an empty value is allowed
+    notes: formData.get("notes").trim(),
+
+    // Priority must be Low, Medium, or High
+    priority: formData.get("priority"),
   };
 }
 
@@ -388,12 +436,15 @@ routineForm.addEventListener("submit", function (event) {
   const formData = new FormData(routineForm);
   const selectedDays = getSelectedDaysFromForm();
 
+  /* Read the current values from the routine form */
   const routineData = {
     title: formData.get("title").trim(),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
     category: formData.get("category"),
     days: selectedDays,
+    notes: formData.get("notes").trim(),
+    priority: formData.get("priority"),
   };
 
   if (selectedDays.length === 0) {
@@ -472,6 +523,11 @@ function editRoutine(id) {
   document.getElementById("endTime").value = routine.endTime;
 
   document.getElementById("category").value = routine.category;
+
+  /* Load saved notes and priority into the edit form */
+  document.getElementById("notes").value = routine.notes || "";
+
+  document.getElementById("priority").value = routine.priority || "Medium";
 
   setSelectedDays(getRoutineDays(routine));
   showDayError(false);
@@ -638,6 +694,37 @@ function migrateOldDayFormat() {
   }
 }
 
+/* ==================================================
+   ADD DEFAULT DETAILS TO OLD ROUTINES
+
+   Routines created before notes and priority existed
+   are updated with safe default values.
+================================================== */
+
+function migrateRoutineDetails() {
+  let dataChanged = false;
+
+  routines = routines.map((routine) => {
+    const updatedRoutine = { ...routine };
+
+    if (typeof updatedRoutine.notes !== "string") {
+      updatedRoutine.notes = "";
+      dataChanged = true;
+    }
+
+    if (!["Low", "Medium", "High"].includes(updatedRoutine.priority)) {
+      updatedRoutine.priority = "Medium";
+      dataChanged = true;
+    }
+
+    return updatedRoutine;
+  });
+
+  if (dataChanged) {
+    saveRoutines();
+  }
+}
+
 /* ------------------------------
    Export backup
 ------------------------------ */
@@ -725,6 +812,8 @@ function importBackup(file) {
       completionHistory = backupData.completionHistory;
 
       migrateOldDayFormat();
+      /* Add default notes and priority to older backups */
+      migrateRoutineDetails();
 
       saveRoutines();
       saveCompletionHistory();
@@ -794,6 +883,7 @@ if ("serviceWorker" in navigator) {
 displayTodayDate();
 migrateOldDayFormat();
 migrateOldCompletionData();
+migrateRoutineDetails();
 selectTodayByDefault();
 loadTheme();
 renderRoutines();

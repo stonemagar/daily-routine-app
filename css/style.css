@@ -459,3 +459,57 @@ body.dark-mode .routine-category {
     flex: 1;
   }
 }
+
+/* ==================================================
+   ROUTINE NOTES AND PRIORITY
+
+   Styles the optional note text and priority labels
+   displayed inside each routine card.
+================================================== */
+
+.routine-notes {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+}
+
+.priority-badge {
+  display: inline-block;
+  margin-top: 7px;
+  margin-left: 6px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.priority-low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.priority-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.priority-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+body.dark-mode .priority-low {
+  background: #14532d;
+  color: #dcfce7;
+}
+
+body.dark-mode .priority-medium {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+body.dark-mode .priority-high {
+  background: #7f1d1d;
+  color: #fee2e2;
+}

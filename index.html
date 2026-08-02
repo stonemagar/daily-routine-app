@@ -173,6 +173,38 @@
               </div>
             </div>
 
+            <!-- ==================================================
+     ROUTINE DETAILS
+
+     Notes store extra information about the activity.
+     Priority shows how important the routine is.
+================================================== -->
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="notes">Notes</label>
+
+                <textarea
+                  id="notes"
+                  name="notes"
+                  class="form-control"
+                  rows="3"
+                  maxlength="300"
+                  placeholder="Example: Bring laptop and charger"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="priority">Priority</label>
+
+                <select id="priority" name="priority" class="form-select">
+                  <option value="Low">Low</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+            </div>
+
             <!-- Add, update, and cancel controls -->
             <div class="form-actions">
               <button id="submitButton" class="primary-button" type="submit">
