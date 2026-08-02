@@ -10,10 +10,16 @@ const importButton = document.getElementById("importButton");
 const importFile = document.getElementById("importFile");
 const submitButton = document.getElementById("submitButton");
 const cancelEditButton = document.getElementById("cancelEditButton");
+
 /* Search and filter controls from index.html */
 const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
 const clearFiltersButton = document.getElementById("clearFiltersButton");
+
+const updateBanner = document.getElementById("updateBanner");
+const updateNowButton = document.getElementById("updateNowButton");
+const dismissUpdateButton = document.getElementById("dismissUpdateButton");
+
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
 
 let completionHistory =
@@ -859,20 +865,147 @@ importFile.addEventListener("change", () => {
   importBackup(selectedFile);
 });
 
-/* ------------------------------
-   Service worker
------------------------------- */
+/* ==================================================
+   SERVICE WORKER AND APP UPDATES
+
+   When a new service worker is ready, the app displays
+   an update banner. Selecting "Update now" activates
+   the new worker and reloads the application.
+
+   Routines remain safe because they are stored in
+   localStorage, which is not cleared during updating.
+================================================== */
+
+let refreshingAfterUpdate = false;
+let waitingServiceWorker = null;
+
+/*
+ * Display the update banner and remember which
+ * service worker is waiting to become active.
+ */
+function showUpdateBanner(worker) {
+  if (!updateBanner || !worker) {
+    return;
+  }
+
+  waitingServiceWorker = worker;
+  updateBanner.classList.remove("d-none");
+}
+
+/*
+ * Hide the banner when the user selects "Later".
+ */
+function hideUpdateBanner() {
+  if (!updateBanner) {
+    return;
+  }
+
+  updateBanner.classList.add("d-none");
+}
+
+/*
+ * Tell the waiting service worker to activate.
+ */
+if (updateNowButton) {
+  updateNowButton.addEventListener("click", () => {
+    if (!waitingServiceWorker) {
+      return;
+    }
+
+    updateNowButton.disabled = true;
+    updateNowButton.textContent = "Updating...";
+
+    waitingServiceWorker.postMessage({
+      type: "SKIP_WAITING",
+    });
+  });
+}
+
+/*
+ * The update remains available even when the banner
+ * is temporarily dismissed.
+ */
+if (dismissUpdateButton) {
+  dismissUpdateButton.addEventListener("click", hideUpdateBanner);
+}
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./service-worker.js")
-      .then(() => {
-        console.log("Service worker registered.");
-      })
-      .catch((error) => {
-        console.error("Service worker registration failed:", error);
+  /*
+   * Reload once when the newly activated worker takes
+   * control of the page.
+   */
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshingAfterUpdate) {
+      return;
+    }
+
+    refreshingAfterUpdate = true;
+    window.location.reload();
+  });
+
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register(
+        "./service-worker.js",
+      );
+
+      console.log("Service worker registered.");
+
+      /*
+       * A new worker may already be waiting when the
+       * user opens the app.
+       */
+      if (registration.waiting) {
+        showUpdateBanner(registration.waiting);
+      }
+
+      /*
+       * Watch for newly downloaded service workers.
+       */
+      registration.addEventListener("updatefound", () => {
+        const installingWorker = registration.installing;
+
+        if (!installingWorker) {
+          return;
+        }
+
+        installingWorker.addEventListener("statechange", () => {
+          const updateIsReady =
+            installingWorker.state === "installed" &&
+            navigator.serviceWorker.controller;
+
+          if (updateIsReady) {
+            showUpdateBanner(installingWorker);
+          }
+        });
       });
+
+      /*
+       * Check for updates whenever the user returns
+       * to the app after using another application.
+       */
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          registration.update().catch((error) => {
+            console.error("Update check failed:", error);
+          });
+        }
+      });
+
+      /*
+       * Check once per hour while the app remains open.
+       */
+      window.setInterval(
+        () => {
+          registration.update().catch((error) => {
+            console.error("Update check failed:", error);
+          });
+        },
+        60 * 60 * 1000,
+      );
+    } catch (error) {
+      console.error("Service worker registration failed:", error);
+    }
   });
 }
 

@@ -50,6 +50,37 @@
         </button>
       </header>
 
+      <!-- ==================================================
+     APP UPDATE BANNER
+     Appears when a newer version is ready to install
+=================================================== -->
+
+      <section
+        id="updateBanner"
+        class="update-banner d-none"
+        role="status"
+        aria-live="polite"
+      >
+        <div>
+          <strong>New version available</strong>
+          <p>Update now to use the latest improvements.</p>
+        </div>
+
+        <div class="update-banner-actions">
+          <button id="updateNowButton" class="primary-button" type="button">
+            Update now
+          </button>
+
+          <button
+            id="dismissUpdateButton"
+            class="btn btn-outline-secondary"
+            type="button"
+          >
+            Later
+          </button>
+        </div>
+      </section>
+
       <main>
         <!-- ==================================================
              TODAY'S PROGRESS
