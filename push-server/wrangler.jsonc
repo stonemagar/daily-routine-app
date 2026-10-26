@@ -1,0 +1,21 @@
+{
+  "name": "my-routine-push",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "vars": {
+    "APP_ORIGIN": "https://stonemagar.github.io",
+    "VAPID_SUBJECT": "mailto:REPLACE_WITH_YOUR_EMAIL"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "my-routine-push",
+      "database_id": "REPLACE_WITH_DATABASE_ID"
+    }
+  ]
+}
