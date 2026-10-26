@@ -4,6 +4,9 @@ export function check(d){
  if(!d||!Array.isArray(d.routines)||d.routines.length>150||!d.settings)throw Error("Invalid payload");
  new Intl.DateTimeFormat("en",{timeZone:d.timezone});
  if(![0,5,10,15,30].includes(d.settings.beforeMinutes))throw Error("Invalid lead time");
+ const mode=d.settings.timezoneMode||"device";
+ if(!["device","fixed"].includes(mode))throw Error("Invalid time zone mode");
+ if(mode==="fixed"&&d.settings.fixedTimezone!==d.timezone)throw Error("Fixed zone must match schedule zone");
  if(!/^\d{4}-\d{2}-\d{2}$/.test(d.completionDate)||!Array.isArray(d.completedToday))throw Error("Invalid history");
  for(const r of d.routines)if(!/^[\w-]{1,128}$/.test(r.id)||typeof r.title!=="string"||!r.title.trim()||r.title.length>100||!/^\d\d:\d\d$/.test(r.startTime)||!/^\d\d:\d\d$/.test(r.endTime)||r.endTime<=r.startTime||!Array.isArray(r.days)||r.days.some(day=>!DAYS.includes(day)))throw Error("Invalid routine");
  return d;

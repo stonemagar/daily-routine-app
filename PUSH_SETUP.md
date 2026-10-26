@@ -12,3 +12,7 @@ The Web Push frontend and Cloudflare Worker backend are committed on feature/web
 8. Deploy the new frontend over HTTPS and enable notifications in the app. On iPhone install the PWA to the Home Screen before requesting permission. Test on a locked device.
 
 Push may be delayed by connectivity, platform restrictions or Cron timing. Browser routines remain in localStorage; schedule changes synchronize when the app is active and online. The Worker stores a push endpoint, routine titles/times, today’s completion IDs and settings. Do not deploy publicly to many users without authentication and rate limiting. Check Worker logs during live tests. Nothing has been merged to main.
+
+## Reminder time zone
+
+Notification settings now offer **Follow device time automatically** (default) or **Keep current time zone when travelling**. The fixed option captures the device's current IANA time zone when selected. Changing the setting syncs to the Worker while online. In device mode, the browser re-detects a changed zone when you open/focus the app, return to it, come online, or while it remains open; this includes daylight saving changes handled by the IANA time-zone database. The Worker schedules against the most recently synced zone. **A device that changes time zones while the app remains completely closed cannot inform the Worker until the app is reopened**, so fully automatic travel updates while closed aren't guaranteed. The main routine list and completion date still use the device's local date even when reminder mode is fixed.

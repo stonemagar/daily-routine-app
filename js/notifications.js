@@ -6,15 +6,35 @@
   if (!status) return;
   const enable = el("pushEnable"), disable = el("pushDisable"), test = el("pushTest");
   const before = el("pushBefore");
+  const timezoneMode = el("pushTimezoneMode"), timezoneHint = el("pushTimezoneHint");
+  let fixedTimezone = null, lastDetectedTimezone = null;
+  function deviceTimezone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  }
+  function isValidTimezone(value) {
+    try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; }
+    catch { return false; }
+  }
+  function effectiveTimezone() {
+    return timezoneMode.value === "fixed" && fixedTimezone ? fixedTimezone : deviceTimezone();
+  }
+  function describeTimezone() {
+    if (!timezoneHint) return;
+    timezoneHint.textContent = timezoneMode.value === "fixed"
+      ? "Reminders use " + effectiveTimezone() + ", even when your device moves to another time zone."
+      : "Reminders use device time (" + deviceTimezone() + "). Travel changes sync when you reopen the app while online.";
+  }
   const fields = [["pushAtStart","atStart"],["pushIncomplete","incomplete"],["pushMorning","morning"],["pushSummary","summary"],["pushQuiet","quietHours"]];
   const PREF = "routine-push-preferences-v1", DEVICE = "routine-push-device-token-v1", ENABLED = "routine-push-enabled";
-  const DEFAULT = { beforeMinutes:10,atStart:true,incomplete:false,morning:false,summary:true,quietHours:true };
+  const DEFAULT = { beforeMinutes:10,atStart:true,incomplete:false,morning:false,summary:true,quietHours:true,timezoneMode:"device",fixedTimezone:null };
   const base = (window.ROUTINE_PUSH_CONFIG?.apiBaseUrl || "").replace(/\/$/,"");
   let active = localStorage.getItem(ENABLED) === "yes", timer = null;
   function announce(s,bad=false) { status.textContent=s; status.classList.toggle("push-error",bad); }
   function prefs() {
     const p={beforeMinutes:Number(before.value)};
     for (const [id,key] of fields) p[key]=el(id).checked;
+    p.timezoneMode = timezoneMode.value === "fixed" ? "fixed" : "device";
+    p.fixedTimezone = p.timezoneMode === "fixed" ? effectiveTimezone() : null;
     return p;
   }
   function loadPrefs() {
@@ -22,6 +42,11 @@
     try { p={...DEFAULT,...JSON.parse(localStorage.getItem(PREF) || "{}")}; } catch {}
     before.value=String([0,5,10,15,30].includes(p.beforeMinutes)?p.beforeMinutes:10);
     for(const [id,key] of fields) el(id).checked=typeof p[key]==="boolean"?p[key]:DEFAULT[key];
+    timezoneMode.value = p.timezoneMode === "fixed" ? "fixed" : "device";
+    fixedTimezone = timezoneMode.value === "fixed" && typeof p.fixedTimezone === "string" && isValidTimezone(p.fixedTimezone)
+      ? p.fixedTimezone : (timezoneMode.value === "fixed" ? deviceTimezone() : null);
+    lastDetectedTimezone = deviceTimezone();
+    describeTimezone();
   }
   function buttons() { enable.hidden=active;disable.hidden=!active;test.disabled=!active; }
   function deviceToken() {
@@ -41,7 +66,7 @@
     const date=today();
     const rs=JSON.parse(localStorage.getItem("routines") || "[]");
     const history=JSON.parse(localStorage.getItem("completionHistory") || "{}");
-    return {timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,settings:prefs(),
+    return {timezone:effectiveTimezone(),settings:prefs(),
       routines:rs.map(r=>({id:r.id,title:r.title,days:Array.isArray(r.days)?r.days:[r.day],startTime:r.startTime,endTime:r.endTime})),
       completionDate:date,completedToday:Array.isArray(history[date])?history[date]:[]};
   }
@@ -108,11 +133,32 @@
     finally { test.disabled=!active; }
   });
   loadPrefs();
-  [before,...fields.map(([id])=>el(id))].forEach(control=>control.addEventListener("change",()=>{
-    localStorage.setItem(PREF,JSON.stringify(prefs()));queueSync();
-  }));
+  function savePreferences() {
+    localStorage.setItem(PREF, JSON.stringify(prefs()));
+    describeTimezone();
+    queueSync();
+  }
+  [before,...fields.map(([id])=>el(id))].forEach(control=>control.addEventListener("change",savePreferences));
+  timezoneMode.addEventListener("change",()=>{
+    // Pin the current device zone when fixed mode is selected.
+    fixedTimezone = timezoneMode.value === "fixed" ? deviceTimezone() : null;
+    savePreferences();
+  });
+  function refreshDeviceTimezone() {
+    const latest = deviceTimezone();
+    if (latest === lastDetectedTimezone) return;
+    lastDetectedTimezone = latest;
+    describeTimezone();
+    // Fixed mode retains its saved zone; device mode follows the new zone.
+    if (timezoneMode.value === "device") queueSync();
+  }
   window.addEventListener("routine-data-changed",queueSync);
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible") queueSync();});
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"){refreshDeviceTimezone();queueSync();}
+  });
+  window.addEventListener("focus",()=>{refreshDeviceTimezone();queueSync();});
+  window.addEventListener("online",()=>{refreshDeviceTimezone();queueSync();});
+  window.setInterval(refreshDeviceTimezone,60000);
   navigator.serviceWorker?.addEventListener("message",e=>{
     if(e.data?.type==="ROUTINE_PUSH") announce(e.data.title+": "+e.data.body);
   });

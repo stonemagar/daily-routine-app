@@ -1,4 +1,4 @@
-const CACHE_NAME = "daily-routine-app-v19";
+const CACHE_NAME = "daily-routine-app-v20";
 
 const APP_FILES = [
   "./",

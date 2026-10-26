@@ -313,6 +313,14 @@
             <label for="pushBefore">Remind before activity
               <select id="pushBefore" class="form-select"><option value="0">Off</option><option value="5">5 minutes</option><option value="10" selected>10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select>
             </label>
+            <div class="push-timezone">
+              <label for="pushTimezoneMode">Reminder time zone</label>
+              <select id="pushTimezoneMode" class="form-select">
+                <option value="device" selected>Follow device time automatically (recommended)</option>
+                <option value="fixed">Keep current time zone when travelling</option>
+              </select>
+              <small id="pushTimezoneHint" class="push-timezone-help" role="status" aria-live="polite"></small>
+            </div>
             <label class="push-check"><input type="checkbox" id="pushAtStart" checked> At activity start</label>
             <label class="push-check"><input type="checkbox" id="pushIncomplete"> Incomplete activity (+10 minutes)</label>
             <label class="push-check"><input type="checkbox" id="pushMorning"> Morning overview (7 AM)</label>

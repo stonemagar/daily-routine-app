@@ -1317,3 +1317,7 @@ body.dark-mode .empty-state-icon {
 .push-status.push-error{color:var(--danger)}.push-actions button[hidden]{display:none}
 .push-highlight{outline:3px solid var(--primary);outline-offset:3px}
 @media(max-width:640px){.push-panel{padding:16px}.push-settings-grid{grid-template-columns:1fr}.push-actions button{width:100%}}
+
+/* Reminder time-zone selector */
+.push-timezone{display:grid;grid-column:1/-1;gap:7px}
+.push-timezone-help{display:block;color:var(--muted);font-size:.85rem;line-height:1.5}
