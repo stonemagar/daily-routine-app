@@ -1,9 +1,11 @@
-const CACHE_NAME = "daily-routine-app-v21";
+const CACHE_NAME = "daily-routine-app-v22";
 
 const APP_FILES = [
   "./",
   "./index.html",
   "./css/style.css",
+  "./css/layout.css",
+  "./js/layout.js",
   "./js/app.js",
   "./js/push-config.js",
   "./js/notifications.js",

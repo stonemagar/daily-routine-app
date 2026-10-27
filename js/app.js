@@ -31,15 +31,6 @@ const closeRoutineFormButton = document.getElementById(
   "closeRoutineFormButton",
 );
 const formBackdrop = document.getElementById("formBackdrop");
-const bottomAddButton = document.getElementById("bottomAddButton");
-
-/* Mobile navigation buttons that scroll to page sections */
-const mobileNavButtons = document.querySelectorAll(
-  ".mobile-nav-button[data-scroll-target]",
-);
-
-const floatingAddButton = document.getElementById("floatingAddButton");
-
 let routines = JSON.parse(localStorage.getItem("routines")) || [];
 
 let completionHistory =
@@ -137,38 +128,10 @@ function toggleRoutine(id) {
   renderRoutines();
 }
 
-/* ==================================================
-   RESPONSIVE ROUTINE FORM
-
-   Desktop:
-   The form remains inside the normal page.
-
-   Mobile:
-   The form opens as a bottom sheet above the page.
-================================================== */
-
-function isMobileLayout() {
-  return window.matchMedia("(max-width: 640px)").matches;
-}
+/* Routine editor: centered dialog on desktop and bottom sheet on phones. */
 
 function setRoutineFormExpanded(expanded) {
   if (!routineFormCard) {
-    return;
-  }
-
-  /*
-   * On desktop the form always remains in the page.
-   * The expanded and collapsed classes only control
-   * the mobile bottom-sheet presentation.
-   */
-  if (!isMobileLayout()) {
-    routineFormCard.classList.remove("form-expanded");
-    document.body.classList.remove("sheet-open");
-
-    if (formBackdrop) {
-      formBackdrop.hidden = true;
-    }
-
     return;
   }
 
@@ -176,6 +139,10 @@ function setRoutineFormExpanded(expanded) {
   routineFormCard.classList.toggle("form-collapsed", !expanded);
 
   document.body.classList.toggle("sheet-open", expanded);
+  routineFormCard.setAttribute("aria-hidden", String(!expanded));
+  window.dispatchEvent(
+    new CustomEvent("routine-editor-change", { detail: expanded }),
+  );
 
   if (formBackdrop) {
     formBackdrop.hidden = !expanded;
@@ -187,38 +154,18 @@ function openRoutineForm(options = {}) {
 
   setRoutineFormExpanded(true);
 
-  if (!isMobileLayout()) {
-    routineFormCard.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }
-
   if (focusTitle) {
     window.setTimeout(
       () => {
         document.getElementById("title").focus();
       },
-      isMobileLayout() ? 300 : 500,
+      100,
     );
   }
 }
 
 function closeRoutineForm() {
-  if (isMobileLayout()) {
-    setRoutineFormExpanded(false);
-  }
-}
-
-if (bottomAddButton) {
-  bottomAddButton.addEventListener("click", () => {
-    /*
-     * Clear a previous edit before creating a completely
-     * new routine from the navigation button.
-     */
-    resetRoutineForm();
-    openRoutineForm();
-  });
+  setRoutineFormExpanded(false);
 }
 
 if (closeRoutineFormButton) {
@@ -239,43 +186,6 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-/*
- * Reset bottom-sheet state when switching between
- * mobile and desktop layouts.
- */
-window.addEventListener("resize", () => {
-  if (!isMobileLayout()) {
-    document.body.classList.remove("sheet-open");
-
-    if (formBackdrop) {
-      formBackdrop.hidden = true;
-    }
-  }
-});
-
-/*
- * Open the form and move the user directly to it when
- * the floating Add button is selected.
- */
-if (floatingAddButton) {
-  floatingAddButton.addEventListener("click", () => {
-    setRoutineFormExpanded(true);
-
-    routineFormCard.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-
-    /*
-     * Focus the activity field after the scrolling
-     * animation has had time to begin.
-     */
-    window.setTimeout(() => {
-      document.getElementById("title").focus();
-    }, 400);
-  });
-}
-
 function resetRoutineForm() {
   editingRoutineId = null;
 
@@ -291,10 +201,7 @@ function resetRoutineForm() {
     routineFormHeading.textContent = "Add routine";
   }
 
-  /* Close the form after saving or cancelling on mobile */
-  if (isMobileLayout()) {
-    setRoutineFormExpanded(false);
-  }
+  setRoutineFormExpanded(false);
 }
 
 /* ------------------------------
@@ -510,7 +417,8 @@ function renderRoutines() {
       </div>
     `;
 
-    updateProgress([]);
+    updateProgress();
+    window.dispatchEvent(new Event("routine-rendered"));
     return;
   }
 
@@ -626,10 +534,14 @@ function renderRoutines() {
     })
     .join("");
 
-  updateProgress(filteredRoutines);
+  updateProgress();
+  window.dispatchEvent(new Event("routine-rendered"));
 }
 
-function updateProgress(selectedRoutines) {
+function updateProgress() {
+  const selectedRoutines = routines.filter((r) =>
+    getRoutineDays(r).includes(getTodayName()),
+  );
   const total = selectedRoutines.length;
 
   const completed = selectedRoutines.filter((routine) =>
@@ -952,28 +864,6 @@ clearFiltersButton.addEventListener("click", clearRoutineFilters);
    Scroll to the selected section and visually mark
    the most recently selected navigation item.
 ================================================== */
-
-mobileNavButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const targetId = button.dataset.scrollTarget;
-    const targetElement = document.getElementById(targetId);
-
-    if (!targetElement) {
-      return;
-    }
-
-    mobileNavButtons.forEach((navButton) => {
-      navButton.classList.remove("is-active");
-    });
-
-    button.classList.add("is-active");
-
-    targetElement.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  });
-});
 
 /* ------------------------------
    HTML safety

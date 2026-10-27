@@ -1,368 +1,167 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-
+    <meta charset="utf-8" />
     <!-- Makes the page responsive on phones and tablets -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <!-- Controls the browser and installed PWA theme colour -->
-    <meta name="theme-color" content="#111827" />
-
+    <meta content="#111827" name="theme-color" />
     <meta
-      name="description"
       content="A mobile-friendly app for creating and tracking daily routines."
+      name="description"
     />
-
     <title>Daily Routine App</title>
-
     <!-- Bootstrap provides responsive layout and reusable UI styles -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-
     <!-- Consistent icons used throughout the application -->
     <link
-      rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
     />
-
     <!-- Custom styles for this application -->
-    <link rel="stylesheet" href="css/style.css" />
-
+    <link href="css/style.css" rel="stylesheet" />
     <!-- PWA settings used when the app is installed -->
-    <link rel="manifest" href="manifest.json" />
-
+    <link href="manifest.json" rel="manifest" />
     <!-- App icon displayed in the browser tab -->
-    <link rel="icon" type="image/png" href="assets/icons/icon-192.png" />
+    <link href="assets/icons/icon-192.png" rel="icon" type="image/png" />
+    <link href="css/layout.css" rel="stylesheet" />
   </head>
-
   <body>
     <div class="app-shell">
       <!-- ==================================================
            APP HEADER
            Displays the app name and dark-mode control
       =================================================== -->
-
       <header class="app-header">
         <div>
           <p class="eyebrow">Daily planner</p>
           <h1>My Routine</h1>
         </div>
-
         <button
-          id="themeToggle"
+          aria-label="Open settings"
           class="icon-button"
+          data-open-settings=""
           type="button"
-          aria-label="Change colour theme"
         >
-          <i id="themeIcon" class="bi bi-moon-stars" aria-hidden="true"></i>
-          <span id="themeButtonText">Dark mode</span>
+          <i aria-hidden="true" class="bi bi-gear"> </i>
         </button>
       </header>
-
       <!-- ==================================================
      APP UPDATE BANNER
      Appears when a newer version is ready to install
 =================================================== -->
-
       <section
-        id="updateBanner"
-        class="update-banner d-none"
-        role="status"
         aria-live="polite"
+        class="update-banner d-none"
+        id="updateBanner"
+        role="status"
       >
         <div>
-          <strong>New version available</strong>
+          <strong> New version available </strong>
           <p>Update now to use the latest improvements.</p>
         </div>
-
         <div class="update-banner-actions">
-          <button id="updateNowButton" class="primary-button" type="button">
+          <button class="primary-button" id="updateNowButton" type="button">
             Update now
           </button>
-
           <button
-            id="dismissUpdateButton"
             class="btn btn-outline-secondary"
+            id="dismissUpdateButton"
             type="button"
           >
             Later
           </button>
         </div>
       </section>
-
       <main>
-        <!-- ==================================================
-             TODAY'S PROGRESS
-             Displays the current date and completion percentage
-        =================================================== -->
-
-        <section id="todaySection" class="summary-card">
-          <div class="summary-top-row">
-            <div>
-              <p>Today</p>
-              <h2 id="todayDate">Loading date...</h2>
-            </div>
-
-            <div class="progress-box">
-              <span id="progressText">0 of 0 completed</span>
-              <strong id="progressPercent">0%</strong>
-            </div>
-          </div>
-
-          <div
-            id="progressTrack"
-            class="progress-track"
-            role="progressbar"
-            aria-label="Routine completion"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-          >
-            <span id="progressBarFill" class="progress-bar-fill"></span>
-          </div>
-        </section>
-
-        <!-- ==================================================
-             ROUTINE FORM
-             Allows the user to add or edit a routine
-        =================================================== -->
-
-        <!-- Dark background shown behind the mobile bottom sheet -->
-        <div id="formBackdrop" class="sheet-backdrop" hidden></div>
-
         <section
-          id="routineFormCard"
-          class="routine-form-card form-collapsed"
-          aria-labelledby="routineFormHeading"
+          aria-labelledby="todayHeading"
+          class="app-view"
+          id="view-today"
         >
-          <!-- Small handle displayed at the top of the mobile sheet -->
-          <div class="sheet-handle" aria-hidden="true"></div>
-
-          <div class="section-heading form-sheet-heading">
+          <div class="view-heading">
             <div>
-              <p class="eyebrow">New activity</p>
-              <h2 id="routineFormHeading">Add routine</h2>
+              <p class="eyebrow">Your day, at a glance</p>
+              <h2 id="todayHeading" tabindex="-1">Today</h2>
             </div>
-
-            <!-- Visible only when the form is a mobile bottom sheet -->
             <button
-              id="closeRoutineFormButton"
-              class="sheet-close-button"
+              aria-label="Add routine"
+              class="icon-button"
+              data-add-routine=""
               type="button"
-              aria-label="Close routine form"
             >
-              <i class="bi bi-x-lg" aria-hidden="true"></i>
+              ＋
             </button>
           </div>
-
-          <form id="routineForm">
-            <!-- Routine name -->
-            <div class="form-group">
-              <label for="title">Activity name</label>
-
-              <input
-                id="title"
-                name="title"
-                type="text"
-                placeholder="Example: Study Python"
-                maxlength="100"
-                required
-              />
-            </div>
-
-            <!-- Routine start and end times -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="startTime">Start time</label>
-
-                <input id="startTime" name="startTime" type="time" required />
+          <section class="summary-card" id="todaySection">
+            <div class="summary-top-row">
+              <div>
+                <p>Today</p>
+                <h2 id="todayDate">Loading date...</h2>
               </div>
-
-              <div class="form-group">
-                <label for="endTime">End time</label>
-
-                <input id="endTime" name="endTime" type="time" required />
+              <div class="progress-box">
+                <span id="progressText"> 0 of 0 completed </span>
+                <strong id="progressPercent"> 0% </strong>
               </div>
             </div>
-
-            <!-- Routine category and repeating weekdays -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="category">Category</label>
-
-                <select id="category" name="category">
-                  <option value="Study">Study</option>
-                  <option value="Work">Work</option>
-                  <option value="Health">Health</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Meal">Meal</option>
-                  <option value="Sleep">Sleep</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <span class="form-label">Select days</span>
-
-                <div class="weekday-grid">
-                  <label class="weekday-option">
-                    <input type="checkbox" name="days" value="Monday" />
-                    Monday
-                  </label>
-
-                  <label class="weekday-option">
-                    <input type="checkbox" name="days" value="Tuesday" />
-                    Tuesday
-                  </label>
-
-                  <label class="weekday-option">
-                    <input type="checkbox" name="days" value="Wednesday" />
-                    Wednesday
-                  </label>
-
-                  <label class="weekday-option">
-                    <input type="checkbox" name="days" value="Thursday" />
-                    Thursday
-                  </label>
-
-                  <label class="weekday-option">
-                    <input type="checkbox" name="days" value="Friday" />
-                    Friday
-                  </label>
-
-                  <label class="weekday-option">
-                    <input type="checkbox" name="days" value="Saturday" />
-                    Saturday
-                  </label>
-
-                  <label class="weekday-option">
-                    <input type="checkbox" name="days" value="Sunday" />
-                    Sunday
-                  </label>
-                </div>
-
-                <!-- Hidden until the user submits without selecting a day -->
-                <small id="dayError" class="text-danger d-none">
-                  Select at least one day.
-                </small>
-              </div>
+            <div
+              aria-label="Routine completion"
+              aria-valuemax="100"
+              aria-valuemin="0"
+              aria-valuenow="0"
+              class="progress-track"
+              id="progressTrack"
+              role="progressbar"
+            >
+              <span class="progress-bar-fill" id="progressBarFill"> </span>
             </div>
-
-            <!-- ==================================================
-     ROUTINE DETAILS
-
-     Notes store extra information about the activity.
-     Priority shows how important the routine is.
-================================================== -->
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="notes">Notes</label>
-
-                <textarea
-                  id="notes"
-                  name="notes"
-                  class="form-control"
-                  rows="3"
-                  maxlength="300"
-                  placeholder="Example: Bring laptop and charger"
-                ></textarea>
-              </div>
-
-              <div class="form-group">
-                <label for="priority">Priority</label>
-
-                <select id="priority" name="priority" class="form-select">
-                  <option value="Low">Low</option>
-                  <option value="Medium" selected>Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Add, update, and cancel controls -->
-            <div class="form-actions">
-              <button id="submitButton" class="primary-button" type="submit">
-                Add routine
-              </button>
-
-              <button
-                id="cancelEditButton"
-                class="btn btn-outline-secondary d-none"
-                type="button"
-              >
-                Cancel edit
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <!-- ==================================================
-             ROUTINE LIST
-             Displays, searches, and filters saved routines
-        =================================================== -->
-
-        
-        <!-- ROUTINE_PUSH_ADDON -->
-        <section id="notificationsSection" class="push-panel" aria-labelledby="pushHeading">
-          <div class="push-heading"><div><p class="eyebrow">Stay on schedule</p><h2 id="pushHeading">Notifications</h2></div><i class="bi bi-bell" aria-hidden="true"></i></div>
-          <p class="push-description">Receive reminders even with your phone locked or the app closed, once the push service is deployed.</p>
-          <div class="push-settings-grid">
-            <label for="pushBefore">Remind before activity
-              <select id="pushBefore" class="form-select"><option value="0">Off</option><option value="5">5 minutes</option><option value="10" selected>10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select>
-            </label>
-            <div class="push-timezone">
-              <label for="pushTimezoneMode">Reminder time zone</label>
-              <select id="pushTimezoneMode" class="form-select">
-                <option value="device" selected>Follow device time automatically (recommended)</option>
-                <option value="fixed">Keep current time zone when travelling</option>
-              </select>
-              <small id="pushTimezoneHint" class="push-timezone-help" role="status" aria-live="polite"></small>
-            </div>
-            <label class="push-check"><input type="checkbox" id="pushAtStart" checked> At activity start</label>
-            <label class="push-check"><input type="checkbox" id="pushIncomplete"> Incomplete activity (+10 minutes)</label>
-            <label class="push-check"><input type="checkbox" id="pushMorning"> Morning overview (7 AM)</label>
-            <label class="push-check"><input type="checkbox" id="pushSummary" checked> Daily summary (8 PM)</label>
-            <label class="push-check"><input type="checkbox" id="pushQuiet" checked> Quiet hours (10 PM–7 AM)</label>
+          </section>
+          <section
+            aria-label="Next routine"
+            class="next-card"
+            id="upNext"
+          ></section>
+          <div class="section-heading">
+            <h3>Today's timeline</h3>
+            <span class="muted" id="todayCount"> </span>
           </div>
-          <div class="push-actions">
-            <button id="pushEnable" class="primary-button" type="button">Enable push notifications</button>
-            <button id="pushDisable" class="btn btn-outline-secondary" type="button" hidden>Disable notifications</button>
-            <button id="pushTest" class="btn btn-outline-primary" type="button" disabled>Test notification</button>
-          </div>
-          <p id="pushStatus" class="push-status" role="status" aria-live="polite"></p>
+          <div class="today-timeline" id="todayTimeline"></div>
         </section>
-
-        <section id="routinesSection" class="routine-list-card">
+        <section
+          aria-labelledby="routinesHeading"
+          class="app-view routine-list-card"
+          hidden=""
+          id="view-routines"
+        >
           <div class="section-heading">
             <div>
               <p class="eyebrow">Schedule</p>
-              <h2>My routines</h2>
+              <h2 id="routinesHeading" tabindex="-1">My routines</h2>
             </div>
+            <button class="primary-button" data-add-routine="" type="button">
+              ＋ Add routine
+            </button>
           </div>
-
           <!-- Search and filter controls -->
           <div class="routine-filter-panel">
             <!-- Search routine names -->
             <div class="form-group">
-              <label for="searchInput">Search routines</label>
-
+              <label for="searchInput"> Search routines </label>
               <input
-                id="searchInput"
-                class="form-control"
-                type="search"
-                placeholder="Search by activity name"
                 autocomplete="off"
+                class="form-control"
+                id="searchInput"
+                placeholder="Search by activity name"
+                type="search"
               />
             </div>
-
             <!-- Filter by day -->
             <div class="form-group">
-              <label for="dayFilter">Day</label>
-
-              <select id="dayFilter" class="form-select">
+              <label for="dayFilter"> Day </label>
+              <select class="form-select" id="dayFilter">
                 <option value="Today">Today</option>
                 <option value="Monday">Monday</option>
                 <option value="Tuesday">Tuesday</option>
@@ -374,12 +173,10 @@
                 <option value="All">All days</option>
               </select>
             </div>
-
             <!-- Filter by category -->
             <div class="form-group">
-              <label for="categoryFilter">Category</label>
-
-              <select id="categoryFilter" class="form-select">
+              <label for="categoryFilter"> Category </label>
+              <select class="form-select" id="categoryFilter">
                 <option value="All">All categories</option>
                 <option value="Study">Study</option>
                 <option value="Work">Work</option>
@@ -389,112 +186,430 @@
                 <option value="Sleep">Sleep</option>
               </select>
             </div>
-
             <!-- Reset all filters to their defaults -->
             <div class="form-group filter-button-group">
-              <span class="form-label">Actions</span>
-
+              <span class="form-label"> Actions </span>
               <button
-                id="clearFiltersButton"
                 class="btn btn-outline-secondary"
+                id="clearFiltersButton"
                 type="button"
               >
-                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                <span>Clear filters</span>
+                <i aria-hidden="true" class="bi bi-arrow-counterclockwise"> </i>
+                <span> Clear filters </span>
               </button>
             </div>
           </div>
-
           <!-- Backup controls -->
-          <div id="backupSection" class="backup-toolbar">
-            <button
-              id="exportButton"
-              class="btn btn-outline-primary btn-sm"
-              type="button"
-            >
-              <i class="bi bi-download" aria-hidden="true"></i>
-              <span>Export backup</span>
-            </button>
-
-            <button
-              id="importButton"
-              class="btn btn-outline-secondary btn-sm"
-              type="button"
-            >
-              <i class="bi bi-upload" aria-hidden="true"></i>
-              <span>Import backup</span>
-            </button>
-
-            <!-- Hidden file input opened by the Import button -->
-            <input
-              id="importFile"
-              type="file"
-              accept=".json,application/json"
-              hidden
-            />
-          </div>
-
           <!-- JavaScript inserts routine cards into this container -->
-          <div id="routineList" class="routine-list" aria-live="polite">
+          <div aria-live="polite" class="routine-list" id="routineList">
             <p class="empty-state">No routines added yet.</p>
           </div>
         </section>
+        <section
+          aria-labelledby="progressHeading"
+          class="app-view"
+          hidden=""
+          id="view-progress"
+        >
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Small steps add up</p>
+              <h2 id="progressHeading" tabindex="-1">Your progress</h2>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span> Completed today </span>
+              <strong id="completedStat"> 0 of 0 </strong>
+              <small id="completionStat"> No routines today </small>
+            </div>
+            <div class="stat-card">
+              <span> Current streak </span>
+              <strong id="streakStat"> 0 days </strong>
+              <small> Days with a completed routine </small>
+            </div>
+          </div>
+          <section class="layout-card">
+            <div class="section-heading">
+              <h3>Last 7 days</h3>
+              <span class="muted"> Completed routines </span>
+            </div>
+            <div
+              aria-label="Completed routines over the last seven days"
+              class="week-bars"
+              id="weekBars"
+              role="list"
+            ></div>
+            <p class="chart-note">Counts reflect saved completion history.</p>
+          </section>
+          <section class="layout-card">
+            <h3>Completed today</h3>
+            <div id="completedList"></div>
+          </section>
+        </section>
+        <section
+          aria-labelledby="settingsHeading"
+          class="app-view"
+          hidden=""
+          id="view-settings"
+        >
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Make it yours</p>
+              <h2 id="settingsHeading" tabindex="-1">Settings</h2>
+            </div>
+          </div>
+          <section class="layout-card settings-row" id="appearanceSection">
+            <div>
+              <h3>Appearance</h3>
+              <p class="muted">Choose your colour theme</p>
+            </div>
+            <button
+              aria-label="Change colour theme"
+              class="icon-button"
+              id="themeToggle"
+              type="button"
+            >
+              <i aria-hidden="true" class="bi bi-moon-stars" id="themeIcon">
+              </i>
+              <span id="themeButtonText"> Dark mode </span>
+            </button>
+          </section>
+          <section
+            aria-labelledby="pushHeading"
+            class="push-panel"
+            id="notificationsSection"
+          >
+            <div class="push-heading">
+              <div>
+                <p class="eyebrow">Stay on schedule</p>
+                <h2 id="pushHeading">Notifications</h2>
+              </div>
+              <i aria-hidden="true" class="bi bi-bell"> </i>
+            </div>
+            <p class="push-description">
+              Choose when to receive reminders. Enable notifications on each
+              device you use.
+            </p>
+            <div class="push-settings-grid">
+              <label for="pushBefore">
+                Remind before activity
+                <select class="form-select" id="pushBefore">
+                  <option value="0">Off</option>
+                  <option value="5">5 minutes</option>
+                  <option selected="" value="10">10 minutes</option>
+                  <option value="15">15 minutes</option>
+                  <option value="30">30 minutes</option>
+                </select>
+              </label>
+              <div class="push-timezone">
+                <label for="pushTimezoneMode"> Reminder time zone </label>
+                <select class="form-select" id="pushTimezoneMode">
+                  <option selected="" value="device">
+                    Follow device time automatically (recommended)
+                  </option>
+                  <option value="fixed">
+                    Keep current time zone when travelling
+                  </option>
+                </select>
+                <small
+                  aria-live="polite"
+                  class="push-timezone-help"
+                  id="pushTimezoneHint"
+                  role="status"
+                >
+                </small>
+              </div>
+              <label class="push-check">
+                <input checked="" id="pushAtStart" type="checkbox" />
+                At activity start
+              </label>
+              <label class="push-check">
+                <input id="pushIncomplete" type="checkbox" />
+                Incomplete activity (+10 minutes)
+              </label>
+              <label class="push-check">
+                <input id="pushMorning" type="checkbox" />
+                Morning overview (7 AM)
+              </label>
+              <label class="push-check">
+                <input checked="" id="pushSummary" type="checkbox" />
+                Daily summary (8 PM)
+              </label>
+              <label class="push-check">
+                <input checked="" id="pushQuiet" type="checkbox" />
+                Quiet hours (10 PM–7 AM)
+              </label>
+            </div>
+            <div class="push-actions">
+              <button class="primary-button" id="pushEnable" type="button">
+                Enable push notifications
+              </button>
+              <button
+                class="btn btn-outline-secondary"
+                hidden=""
+                id="pushDisable"
+                type="button"
+              >
+                Disable notifications
+              </button>
+              <button
+                class="btn btn-outline-primary"
+                disabled=""
+                id="pushTest"
+                type="button"
+              >
+                Test notification
+              </button>
+            </div>
+            <p
+              aria-live="polite"
+              class="push-status"
+              id="pushStatus"
+              role="status"
+            ></p>
+          </section>
+          <section class="layout-card">
+            <h3>Backup &amp; restore</h3>
+            <p class="muted">
+              Keep a copy of your routines and completion history.
+            </p>
+            <div class="backup-toolbar" id="backupSection">
+              <button
+                class="btn btn-outline-primary btn-sm"
+                id="exportButton"
+                type="button"
+              >
+                <i aria-hidden="true" class="bi bi-download"> </i>
+                <span> Export backup </span>
+              </button>
+              <button
+                class="btn btn-outline-secondary btn-sm"
+                id="importButton"
+                type="button"
+              >
+                <i aria-hidden="true" class="bi bi-upload"> </i>
+                <span> Import backup </span>
+              </button>
+              <!-- Hidden file input opened by the Import button -->
+              <input
+                accept=".json,application/json"
+                hidden=""
+                id="importFile"
+                type="file"
+              />
+            </div>
+          </section>
+        </section>
+        <div class="sheet-backdrop" hidden="" id="formBackdrop"></div>
+        <section
+          aria-hidden="true"
+          aria-labelledby="routineFormHeading"
+          aria-modal="true"
+          class="routine-form-card form-collapsed"
+          id="routineFormCard"
+          role="dialog"
+          tabindex="-1"
+        >
+          <!-- Small handle displayed at the top of the mobile sheet -->
+          <div aria-hidden="true" class="sheet-handle"></div>
+          <div class="section-heading form-sheet-heading">
+            <div>
+              <p class="eyebrow">New activity</p>
+              <h2 id="routineFormHeading">Add routine</h2>
+            </div>
+            <!-- Visible only when the form is a mobile bottom sheet -->
+            <button
+              aria-label="Close routine form"
+              class="sheet-close-button"
+              id="closeRoutineFormButton"
+              type="button"
+            >
+              <i aria-hidden="true" class="bi bi-x-lg"> </i>
+            </button>
+          </div>
+          <form id="routineForm">
+            <!-- Routine name -->
+            <div class="form-group">
+              <label for="title"> Activity name </label>
+              <input
+                id="title"
+                maxlength="100"
+                name="title"
+                placeholder="Example: Study Python"
+                required=""
+                type="text"
+              />
+            </div>
+            <!-- Routine start and end times -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="startTime"> Start time </label>
+                <input
+                  id="startTime"
+                  name="startTime"
+                  required=""
+                  type="time"
+                />
+              </div>
+              <div class="form-group">
+                <label for="endTime"> End time </label>
+                <input id="endTime" name="endTime" required="" type="time" />
+              </div>
+            </div>
+            <!-- Routine category and repeating weekdays -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="category"> Category </label>
+                <select id="category" name="category">
+                  <option value="Study">Study</option>
+                  <option value="Work">Work</option>
+                  <option value="Health">Health</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Meal">Meal</option>
+                  <option value="Sleep">Sleep</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <span class="form-label"> Select days </span>
+                <div class="weekday-grid">
+                  <label class="weekday-option">
+                    <input name="days" type="checkbox" value="Monday" />
+                    Monday
+                  </label>
+                  <label class="weekday-option">
+                    <input name="days" type="checkbox" value="Tuesday" />
+                    Tuesday
+                  </label>
+                  <label class="weekday-option">
+                    <input name="days" type="checkbox" value="Wednesday" />
+                    Wednesday
+                  </label>
+                  <label class="weekday-option">
+                    <input name="days" type="checkbox" value="Thursday" />
+                    Thursday
+                  </label>
+                  <label class="weekday-option">
+                    <input name="days" type="checkbox" value="Friday" />
+                    Friday
+                  </label>
+                  <label class="weekday-option">
+                    <input name="days" type="checkbox" value="Saturday" />
+                    Saturday
+                  </label>
+                  <label class="weekday-option">
+                    <input name="days" type="checkbox" value="Sunday" />
+                    Sunday
+                  </label>
+                </div>
+                <!-- Hidden until the user submits without selecting a day -->
+                <small class="text-danger d-none" id="dayError">
+                  Select at least one day.
+                </small>
+              </div>
+            </div>
+            <!-- ==================================================
+     ROUTINE DETAILS
+
+     Notes store extra information about the activity.
+     Priority shows how important the routine is.
+================================================== -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="notes"> Notes </label>
+                <textarea
+                  class="form-control"
+                  id="notes"
+                  maxlength="300"
+                  name="notes"
+                  placeholder="Example: Bring laptop and charger"
+                  rows="3"
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="priority"> Priority </label>
+                <select class="form-select" id="priority" name="priority">
+                  <option value="Low">Low</option>
+                  <option selected="" value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+            </div>
+            <!-- Add, update, and cancel controls -->
+            <div class="form-actions">
+              <button class="primary-button" id="submitButton" type="submit">
+                Add routine
+              </button>
+              <button
+                class="btn btn-outline-secondary d-none"
+                id="cancelEditButton"
+                type="button"
+              >
+                Cancel edit
+              </button>
+            </div>
+          </form>
+        </section>
       </main>
     </div>
-
     <!-- ==================================================
          MOBILE BOTTOM NAVIGATION
 
          Provides quick access to the main app sections.
     =================================================== -->
-
-    <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+    <nav aria-label="Main navigation" class="mobile-bottom-nav">
       <button
+        aria-current="page"
         class="mobile-nav-button is-active"
+        data-view="today"
         type="button"
-        data-scroll-target="todaySection"
       >
-        <i class="bi bi-house-door" aria-hidden="true"></i>
-        <span>Today</span>
+        <i aria-hidden="true" class="bi bi-house-door"> </i>
+        <span> Today </span>
       </button>
-
       <button
-        id="bottomAddButton"
-        class="mobile-nav-button mobile-nav-add"
-        type="button"
-        aria-label="Add a new routine"
-      >
-        <span class="mobile-nav-add-icon">
-          <i class="bi bi-plus-lg" aria-hidden="true"></i>
-        </span>
-        <span>Add</span>
-      </button>
-
-      <button
+        aria-current="false"
         class="mobile-nav-button"
+        data-view="routines"
         type="button"
-        data-scroll-target="routinesSection"
       >
-        <i class="bi bi-list-check" aria-hidden="true"></i>
-        <span>Routines</span>
+        <i aria-hidden="true" class="bi bi-list-check"> </i>
+        <span> Routines </span>
       </button>
-
       <button
+        aria-current="false"
         class="mobile-nav-button"
+        data-view="progress"
         type="button"
-        data-scroll-target="backupSection"
       >
-        <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i>
-        <span>Backup</span>
+        <i aria-hidden="true" class="bi bi-bar-chart"> </i>
+        <span> Progress </span>
+      </button>
+      <button
+        aria-current="false"
+        class="mobile-nav-button"
+        data-view="settings"
+        type="button"
+      >
+        <i aria-hidden="true" class="bi bi-gear"> </i>
+        <span> Settings </span>
       </button>
     </nav>
-
     <!-- Bootstrap JavaScript components -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-
     <!-- Main application logic -->
     <script src="js/app.js"></script>
     <script src="js/push-config.js"></script>
+    <button
+      aria-label="Add routine"
+      class="layout-fab"
+      data-add-routine=""
+      id="layoutAddButton"
+      type="button"
+    >
+      ＋
+    </button>
+    <script src="js/layout.js"></script>
     <script src="js/notifications.js"></script>
   </body>
 </html>
