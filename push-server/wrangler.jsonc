@@ -1,0 +1,22 @@
+{
+  "name": "my-routine-push",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "vars": {
+    "APP_ORIGIN": "https://stonemagar.github.io",
+    "VAPID_SUBJECT": "mailto:stonemagar63@gmail.com",
+    "VAPID_PUBLIC_KEY": "BOBhZNKv01lCg-dE45PrEFEhAjKPcqsBQ_eiweMDsavd2IlzmmQpuG_6uy56yn3Ok2XKZlRx_6YWOKAgwy1csFw"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "my-routine-push",
+      "database_id": "09db3a80-8dff-455d-82b6-3c0b412dbac8"
+    }
+  ]
+}

@@ -1,10 +1,12 @@
-const CACHE_NAME = "daily-routine-app-v18";
+const CACHE_NAME = "daily-routine-app-v21";
 
 const APP_FILES = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/app.js",
+  "./js/push-config.js",
+  "./js/notifications.js",
   "./manifest.json",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
@@ -120,4 +122,34 @@ self.addEventListener("fetch", (event) => {
         return Response.error();
       }),
   );
+});
+
+
+/* Web Push delivery and click handling. */
+self.addEventListener("push",event=>{
+  event.waitUntil((async()=>{
+    let data={};
+    try { data=event.data?.json()||{}; } catch { data={}; }
+    const title=typeof data.title==="string"?data.title.slice(0,100):"Routine reminder";
+    const body=typeof data.body==="string"?data.body.slice(0,250):"Open My Routine to see your schedule.";
+    const url=new URL("./index.html",self.registration.scope);
+    if(typeof data.routineId==="string"&&/^[\w-]{1,128}$/.test(data.routineId)) url.searchParams.set("routine",data.routineId);
+    await self.registration.showNotification(title,{body,icon:"./assets/icons/icon-192.png",badge:"./assets/icons/icon-192.png",tag:data.tag||"routine-alert",data:{url:url.href}});
+    for(const client of await self.clients.matchAll({type:"window",includeUncontrolled:true})) client.postMessage({type:"ROUTINE_PUSH",title,body});
+  })());
+});
+self.addEventListener("notificationclick",event=>{
+  event.notification.close();
+  event.waitUntil((async()=>{
+    const url=event.notification.data?.url||new URL("./index.html",self.registration.scope).href;
+    const clients=await self.clients.matchAll({type:"window",includeUncontrolled:true});
+    for(const client of clients) {
+      if(client.url.startsWith(self.registration.scope)&&"focus" in client) {
+        await client.focus();
+        if("navigate" in client) await client.navigate(url);
+        return;
+      }
+    }
+    await self.clients.openWindow(url);
+  })());
 });

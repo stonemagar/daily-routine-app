@@ -53,10 +53,12 @@ let editingRoutineId = null;
 
 function saveRoutines() {
   localStorage.setItem("routines", JSON.stringify(routines));
+  window.dispatchEvent(new Event("routine-data-changed"));
 }
 
 function saveCompletionHistory() {
   localStorage.setItem("completionHistory", JSON.stringify(completionHistory));
+  window.dispatchEvent(new Event("routine-data-changed"));
 }
 
 /* ------------------------------
@@ -522,7 +524,7 @@ function renderRoutines() {
       const routinePriority = routine.priority || "Medium";
       const routineDayText = formatRoutineDays(routineDays);
       return `
-  <article class="routine-item ${completed ? "completed" : ""}">
+  <article data-routine-id="${escapeHtml(routine.id)}" class="routine-item ${completed ? "completed" : ""}">
     <input
       class="complete-checkbox"
       type="checkbox"
