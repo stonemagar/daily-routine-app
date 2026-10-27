@@ -35,20 +35,6 @@
            APP HEADER
            Displays the app name and dark-mode control
       =================================================== -->
-      <header class="app-header">
-        <div>
-          <p class="eyebrow">Daily planner</p>
-          <h1>My Routine</h1>
-        </div>
-        <button
-          aria-label="Open settings"
-          class="icon-button"
-          data-open-settings=""
-          type="button"
-        >
-          <i aria-hidden="true" class="bi bi-gear"> </i>
-        </button>
-      </header>
       <!-- ==================================================
      APP UPDATE BANNER
      Appears when a newer version is ready to install
@@ -82,30 +68,24 @@
           class="app-view"
           id="view-today"
         >
-          <div class="view-heading">
+          <div class="screen-title today-title">
             <div>
-              <p class="eyebrow">Your day, at a glance</p>
-              <h2 id="todayHeading" tabindex="-1">Today</h2>
+              <h2 id="todayHeading" tabindex="-1">My Routine</h2>
+              <p id="screenDate"></p>
             </div>
             <button
-              aria-label="Add routine"
-              class="icon-button"
-              data-add-routine=""
+              aria-label="View routines calendar"
+              class="calendar-button"
+              data-show-routines=""
               type="button"
             >
-              ＋
+              <i aria-hidden="true" class="bi bi-calendar-check"> </i>
             </button>
           </div>
           <section class="summary-card" id="todaySection">
-            <div class="summary-top-row">
-              <div>
-                <p>Today</p>
-                <h2 id="todayDate">Loading date...</h2>
-              </div>
-              <div class="progress-box">
-                <span id="progressText"> 0 of 0 completed </span>
-                <strong id="progressPercent"> 0% </strong>
-              </div>
+            <div class="completion-line">
+              <strong id="progressText"> 0 of 0 completed </strong>
+              <strong id="progressPercent"> 0% </strong>
             </div>
             <div
               aria-label="Routine completion"
@@ -118,17 +98,16 @@
             >
               <span class="progress-bar-fill" id="progressBarFill"> </span>
             </div>
+            <span hidden="" id="todayDate"> </span>
           </section>
-          <section
-            aria-label="Next routine"
+          <button
+            aria-label="Open next routine"
             class="next-card"
             id="upNext"
-          ></section>
-          <div class="section-heading">
-            <h3>Today's timeline</h3>
-            <span class="muted" id="todayCount"> </span>
-          </div>
+            type="button"
+          ></button>
           <div class="today-timeline" id="todayTimeline"></div>
+          <span hidden="" id="todayCount"> </span>
         </section>
         <section
           aria-labelledby="routinesHeading"
@@ -136,27 +115,35 @@
           hidden=""
           id="view-routines"
         >
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Schedule</p>
-              <h2 id="routinesHeading" tabindex="-1">My routines</h2>
-            </div>
-            <button class="primary-button" data-add-routine="" type="button">
-              ＋ Add routine
-            </button>
+          <div class="screen-title">
+            <h2 id="routinesHeading" tabindex="-1">My routines</h2>
           </div>
+          <div class="routine-search">
+            <i aria-hidden="true" class="bi bi-search"> </i>
+            <input
+              aria-label="Search routines"
+              autocomplete="off"
+              class="form-control"
+              id="searchInput"
+              placeholder="Search routines"
+              type="search"
+            />
+          </div>
+          <div
+            aria-label="Filter routines by day"
+            class="day-chips"
+            role="group"
+          ></div>
+          <div
+            aria-label="Filter routines by category"
+            class="category-chips"
+            role="group"
+          ></div>
           <!-- Search and filter controls -->
-          <div class="routine-filter-panel">
+          <div class="legacy-filters" hidden="">
             <!-- Search routine names -->
             <div class="form-group">
               <label for="searchInput"> Search routines </label>
-              <input
-                autocomplete="off"
-                class="form-control"
-                id="searchInput"
-                placeholder="Search by activity name"
-                type="search"
-              />
             </div>
             <!-- Filter by day -->
             <div class="form-group">
@@ -204,6 +191,13 @@
           <div aria-live="polite" class="routine-list" id="routineList">
             <p class="empty-state">No routines added yet.</p>
           </div>
+          <button
+            class="primary-button routine-add"
+            data-add-routine=""
+            type="button"
+          >
+            + Add routine
+          </button>
         </section>
         <section
           aria-labelledby="progressHeading"
@@ -211,41 +205,70 @@
           hidden=""
           id="view-progress"
         >
-          <div class="view-heading">
+          <div class="screen-title">
+            <h2 id="progressHeading" tabindex="-1">Your progress</h2>
+          </div>
+          <div aria-label="Progress period" class="range-tabs" role="group">
+            <button
+              aria-pressed="true"
+              class="selected"
+              data-range="week"
+              type="button"
+            >
+              Week
+            </button>
+            <button aria-pressed="false" data-range="month" type="button">
+              Month
+            </button>
+            <button aria-pressed="false" data-range="year" type="button">
+              Year
+            </button>
+          </div>
+          <section class="progress-summary">
             <div>
-              <p class="eyebrow">Small steps add up</p>
-              <h2 id="progressHeading" tabindex="-1">Your progress</h2>
+              <p>Completion rate</p>
+              <strong id="ratePercent"> 0% </strong>
+              <p id="progressTodayLabel">0 of 0 completed today</p>
             </div>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <span> Completed today </span>
-              <strong id="completedStat"> 0 of 0 </strong>
-              <small id="completionStat"> No routines today </small>
+            <div class="completion-ring" id="completionRing">
+              <span id="ringPercent"> 0% </span>
             </div>
-            <div class="stat-card">
-              <span> Current streak </span>
-              <strong id="streakStat"> 0 days </strong>
-              <small> Days with a completed routine </small>
-            </div>
-          </div>
-          <section class="layout-card">
-            <div class="section-heading">
-              <h3>Last 7 days</h3>
-              <span class="muted"> Completed routines </span>
-            </div>
+          </section>
+          <section class="weekly-card">
+            <h3 id="chartHeading">Weekly completion</h3>
             <div
-              aria-label="Completed routines over the last seven days"
+              aria-label="Completed routines"
               class="week-bars"
               id="weekBars"
               role="list"
             ></div>
-            <p class="chart-note">Counts reflect saved completion history.</p>
+            <p class="chart-note">Completed routines from saved history</p>
           </section>
-          <section class="layout-card">
-            <h3>Completed today</h3>
+          <div class="streak-grid">
+            <div class="streak-card">
+              <i aria-hidden="true" class="bi bi-flame"> </i>
+              <div>
+                <strong id="streakStat"> 0 days </strong>
+                <small> Current streak </small>
+              </div>
+            </div>
+            <div class="streak-card">
+              <i aria-hidden="true" class="bi bi-trophy"> </i>
+              <div>
+                <strong id="bestStreak"> 0 days </strong>
+                <small> Best streak </small>
+              </div>
+            </div>
+          </div>
+          <section class="completed-section">
+            <div class="completed-heading">
+              <h3>Completed today</h3>
+              <span id="completedCount"> 0/0 </span>
+            </div>
             <div id="completedList"></div>
           </section>
+          <span hidden="" id="completedStat"> </span>
+          <span hidden="" id="completionStat"> </span>
         </section>
         <section
           aria-labelledby="settingsHeading"
@@ -253,115 +276,118 @@
           hidden=""
           id="view-settings"
         >
-          <div class="view-heading">
-            <div>
-              <p class="eyebrow">Make it yours</p>
-              <h2 id="settingsHeading" tabindex="-1">Settings</h2>
-            </div>
+          <div class="screen-title">
+            <h2 id="settingsHeading" tabindex="-1">Settings</h2>
           </div>
           <section class="layout-card settings-row" id="appearanceSection">
-            <div>
-              <h3>Appearance</h3>
-              <p class="muted">Choose your colour theme</p>
+            <h3 class="settings-group-title">Appearance</h3>
+            <div class="setting-row">
+              <i aria-hidden="true" class="bi bi-moon"> </i>
+              <span> Dark mode </span>
+              <button
+                aria-checked="false"
+                aria-label="Change colour theme"
+                class="theme-switch"
+                id="themeToggle"
+                role="switch"
+                type="button"
+              >
+                <i hidden="" id="themeIcon"> </i>
+                <span hidden="" id="themeButtonText"> Dark mode </span>
+              </button>
             </div>
-            <button
-              aria-label="Change colour theme"
-              class="icon-button"
-              id="themeToggle"
-              type="button"
-            >
-              <i aria-hidden="true" class="bi bi-moon-stars" id="themeIcon">
-              </i>
-              <span id="themeButtonText"> Dark mode </span>
-            </button>
           </section>
           <section
             aria-labelledby="pushHeading"
-            class="push-panel"
+            class="settings-group"
             id="notificationsSection"
           >
-            <div class="push-heading">
-              <div>
-                <p class="eyebrow">Stay on schedule</p>
-                <h2 id="pushHeading">Notifications</h2>
-              </div>
+            <h3 class="settings-group-title" id="pushHeading">Notifications</h3>
+            <div class="setting-row push-enable-row">
               <i aria-hidden="true" class="bi bi-bell"> </i>
+              <span> Enable notifications </span>
+              <div id="pushToggleControls">
+                <button
+                  aria-label="Enable push notifications"
+                  class="push-switch"
+                  id="pushEnable"
+                  type="button"
+                ></button>
+                <button
+                  aria-label="Disable notifications"
+                  class="push-switch is-on"
+                  hidden=""
+                  id="pushDisable"
+                  type="button"
+                ></button>
+              </div>
             </div>
-            <p class="push-description">
-              Choose when to receive reminders. Enable notifications on each
-              device you use.
-            </p>
-            <div class="push-settings-grid">
-              <label for="pushBefore">
-                Remind before activity
-                <select class="form-select" id="pushBefore">
+            <div class="setting-row">
+              <i aria-hidden="true" class="bi bi-clock"> </i>
+              <div class="setting-content">
+                <span> Reminder lead time </span>
+                <select
+                  aria-label="Reminder lead time"
+                  class="form-select"
+                  id="pushBefore"
+                >
                   <option value="0">Off</option>
                   <option value="5">5 minutes</option>
                   <option selected="" value="10">10 minutes</option>
                   <option value="15">15 minutes</option>
                   <option value="30">30 minutes</option>
                 </select>
-              </label>
-              <div class="push-timezone">
-                <label for="pushTimezoneMode"> Reminder time zone </label>
-                <select class="form-select" id="pushTimezoneMode">
-                  <option selected="" value="device">
-                    Follow device time automatically (recommended)
-                  </option>
-                  <option value="fixed">
-                    Keep current time zone when travelling
-                  </option>
-                </select>
-                <small
-                  aria-live="polite"
-                  class="push-timezone-help"
-                  id="pushTimezoneHint"
-                  role="status"
-                >
-                </small>
               </div>
-              <label class="push-check">
-                <input checked="" id="pushAtStart" type="checkbox" />
-                At activity start
-              </label>
-              <label class="push-check">
-                <input id="pushIncomplete" type="checkbox" />
-                Incomplete activity (+10 minutes)
-              </label>
-              <label class="push-check">
-                <input id="pushMorning" type="checkbox" />
-                Morning overview (7 AM)
-              </label>
-              <label class="push-check">
-                <input checked="" id="pushSummary" type="checkbox" />
-                Daily summary (8 PM)
-              </label>
-              <label class="push-check">
-                <input checked="" id="pushQuiet" type="checkbox" />
-                Quiet hours (10 PM–7 AM)
-              </label>
             </div>
-            <div class="push-actions">
-              <button class="primary-button" id="pushEnable" type="button">
-                Enable push notifications
-              </button>
-              <button
-                class="btn btn-outline-secondary"
-                hidden=""
-                id="pushDisable"
-                type="button"
-              >
-                Disable notifications
-              </button>
-              <button
-                class="btn btn-outline-primary"
-                disabled=""
-                id="pushTest"
-                type="button"
-              >
-                Test notification
-              </button>
+            <div class="setting-row">
+              <i aria-hidden="true" class="bi bi-activity"> </i>
+              <div class="setting-content">
+                <span> At activity start </span>
+              </div>
+              <input
+                aria-label="At activity start"
+                checked=""
+                class="setting-switch"
+                id="pushAtStart"
+                type="checkbox"
+              />
             </div>
+            <div class="setting-row">
+              <i aria-hidden="true" class="bi bi-moon"> </i>
+              <div class="setting-content">
+                <span> Quiet hours </span>
+                <small> 10 PM – 7 AM </small>
+              </div>
+              <input
+                aria-label="Quiet hours"
+                checked=""
+                class="setting-switch"
+                id="pushQuiet"
+                type="checkbox"
+              />
+            </div>
+            <div class="setting-row">
+              <i aria-hidden="true" class="bi bi-globe"> </i>
+              <div class="setting-content">
+                <span> Timezone </span>
+                <select
+                  aria-label="Reminder time zone"
+                  class="form-select"
+                  id="pushTimezoneMode"
+                >
+                  <option selected="" value="device">Follow device time</option>
+                  <option value="fixed">Keep current timezone</option>
+                </select>
+              </div>
+            </div>
+            <button
+              class="test-push-button"
+              disabled=""
+              id="pushTest"
+              type="button"
+            >
+              Test notification
+            </button>
             <p
               aria-live="polite"
               class="push-status"
@@ -369,27 +395,18 @@
               role="status"
             ></p>
           </section>
-          <section class="layout-card">
-            <h3>Backup &amp; restore</h3>
-            <p class="muted">
-              Keep a copy of your routines and completion history.
-            </p>
+          <section class="settings-group backup-card">
+            <h3 class="settings-group-title">Backup</h3>
             <div class="backup-toolbar" id="backupSection">
-              <button
-                class="btn btn-outline-primary btn-sm"
-                id="exportButton"
-                type="button"
-              >
+              <button class="backup-row" id="exportButton" type="button">
                 <i aria-hidden="true" class="bi bi-download"> </i>
                 <span> Export backup </span>
+                <i aria-hidden="true" class="bi bi-chevron-right"> </i>
               </button>
-              <button
-                class="btn btn-outline-secondary btn-sm"
-                id="importButton"
-                type="button"
-              >
+              <button class="backup-row" id="importButton" type="button">
                 <i aria-hidden="true" class="bi bi-upload"> </i>
                 <span> Import backup </span>
+                <i aria-hidden="true" class="bi bi-chevron-right"> </i>
               </button>
               <!-- Hidden file input opened by the Import button -->
               <input
@@ -400,6 +417,37 @@
               />
             </div>
           </section>
+          <details class="advanced-reminders">
+            <summary>More reminders</summary>
+            <label class="setting-row">
+              Incomplete activity (+10 minutes)
+              <input
+                class="setting-switch"
+                id="pushIncomplete"
+                type="checkbox"
+              />
+            </label>
+            <label class="setting-row">
+              Morning overview (7 AM)
+              <input class="setting-switch" id="pushMorning" type="checkbox" />
+            </label>
+            <label class="setting-row">
+              Daily summary (8 PM)
+              <input
+                checked=""
+                class="setting-switch"
+                id="pushSummary"
+                type="checkbox"
+              />
+            </label>
+            <small
+              aria-live="polite"
+              class="push-timezone-help"
+              id="pushTimezoneHint"
+              role="status"
+            >
+            </small>
+          </details>
         </section>
         <div class="sheet-backdrop" hidden="" id="formBackdrop"></div>
         <section
@@ -548,6 +596,14 @@
                 Cancel edit
               </button>
             </div>
+            <button
+              class="btn btn-outline-danger"
+              hidden=""
+              id="deleteRoutineFromEditor"
+              type="button"
+            >
+              Delete routine
+            </button>
           </form>
         </section>
       </main>

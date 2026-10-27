@@ -1,13 +1,96 @@
-const {JSDOM}=require('jsdom');const fs=require('fs');const assert=require('node:assert/strict');const root=require('path').resolve(__dirname,'..')+'/';
-const dom=new JSDOM(fs.readFileSync(root+'index.html','utf8'),{url:'https://example.com/',runScripts:'outside-only',pretendToBeVisual:true});const w=dom.window;w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.matchMedia=()=>({matches:true});w.confirm=()=>true;
-const weekday=new Date().toLocaleDateString('en-GB',{weekday:'long'}),date=[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0'),String(new Date().getDate()).padStart(2,'0')].join('-');
-w.localStorage.setItem('routines',JSON.stringify([{id:'study',title:'Study Python',startTime:'10:00',endTime:'11:00',days:[weekday],category:'Study',priority:'Medium',notes:''}]));
-for(const name of ['app','push-config','layout','notifications'])require('vm').runInContext(fs.readFileSync(root+'js/'+name+'.js','utf8'),dom.getInternalVMContext());
-const $=s=>w.document.querySelector(s);assert.equal(w.document.querySelectorAll('.app-view:not([hidden])').length,1);assert.match($('#todayTimeline').textContent,/Study Python/);
-$('#todayTimeline input').click();assert.equal($('#progressText').textContent,'1 of 1 completed');
-$('[data-view=routines]').click();$('#searchInput').value='missing';$('#searchInput').dispatchEvent(new w.Event('input'));assert.match($('#routineList').textContent,/No matching routines/);assert.equal($('#progressText').textContent,'1 of 1 completed');
-$('[data-view=progress]').click();assert.equal($('#completedStat').textContent,'1 of 1');assert.equal($('#streakStat').textContent,'1 day');assert.equal(w.document.querySelectorAll('.week-day').length,7);
-$('[data-view=settings]').click();assert.equal($('#view-settings').hidden,false);assert.ok($('#view-settings').contains($('#pushEnable')));assert.ok($('#view-settings').contains($('#exportButton')));$('#themeToggle').click();assert.ok(w.document.body.classList.contains('dark-mode'));
-$('[data-view=today]').click();$('[data-add-routine]').click();assert.equal($('#routineFormCard').getAttribute('aria-hidden'),'false');w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));assert.equal($('#routineFormCard').getAttribute('aria-hidden'),'true');
-w.editRoutine('study');assert.equal($('#title').value,'Study Python');$('#title').value='Study JavaScript';$('#routineForm').dispatchEvent(new w.Event('submit',{cancelable:true}));assert.match($('#todayTimeline').textContent,/Study JavaScript/);assert.equal(JSON.parse(w.localStorage.getItem('routines'))[0].title,'Study JavaScript');
-assert.equal(JSON.parse(w.localStorage.getItem('completionHistory'))[date][0],'study');console.log('PASS: four-tab navigation, real progress, completion persistence, filtering independence, settings controls, theme, add/edit dialog, Escape and editing persistence');dom.window.close();
+const { JSDOM } = require("jsdom");
+const fs = require("fs");
+const assert = require("node:assert/strict");
+const root = require("path").resolve(__dirname, "..") + "/";
+const dom = new JSDOM(fs.readFileSync(root + "index.html", "utf8"), {
+  url: "https://example.com/",
+  runScripts: "outside-only",
+  pretendToBeVisual: true,
+});
+const w = dom.window;
+w.scrollTo = () => {};
+w.HTMLElement.prototype.scrollIntoView = () => {};
+w.matchMedia = () => ({ matches: true });
+w.confirm = () => true;
+const weekday = new Date().toLocaleDateString("en-GB", { weekday: "long" }),
+  date = [
+    new Date().getFullYear(),
+    String(new Date().getMonth() + 1).padStart(2, "0"),
+    String(new Date().getDate()).padStart(2, "0"),
+  ].join("-");
+w.localStorage.setItem(
+  "routines",
+  JSON.stringify([
+    {
+      id: "study",
+      title: "Study Python",
+      startTime: "10:00",
+      endTime: "11:00",
+      days: [weekday],
+      category: "Study",
+      priority: "Medium",
+      notes: "",
+    },
+  ]),
+);
+for (const name of ["app", "push-config", "layout", "notifications"])
+  require("vm").runInContext(
+    fs.readFileSync(root + "js/" + name + ".js", "utf8"),
+    dom.getInternalVMContext(),
+  );
+const $ = (s) => w.document.querySelector(s);
+assert.equal(w.document.querySelectorAll(".app-view:not([hidden])").length, 1);
+assert.match($("#todayTimeline").textContent, /Study Python/);
+$("#todayTimeline input").click();
+assert.equal($("#progressText").textContent, "1 of 1 completed");
+$("[data-view=routines]").click();
+$("#searchInput").value = "missing";
+$("#searchInput").dispatchEvent(new w.Event("input"));
+assert.match($("#routineList").textContent, /No matching routines/);
+assert.equal($("#progressText").textContent, "1 of 1 completed");
+$("[data-view=progress]").click();
+assert.equal($("#completedStat").textContent, "1 of 1");
+assert.equal($("#streakStat").textContent, "1 day");
+assert.equal(w.document.querySelectorAll(".week-day").length, 7);
+$("[data-range=month]").click();
+assert.equal(w.document.querySelectorAll(".week-day").length, 4);
+$("[data-range=year]").click();
+assert.equal(w.document.querySelectorAll(".week-day").length, 12);
+$("[data-range=week]").click();
+assert.equal(w.document.querySelectorAll(".week-day").length, 7);
+assert.equal($("#ringPercent").textContent, "100%");
+assert.equal($("#bestStreak").textContent, "1 day");
+$("#searchInput").value = "";
+$("[data-view=routines]").click();
+$("[data-category-filter=Work]").click();
+assert.match($("#routineList").textContent, /No matching routines/);
+$("[data-category-filter=All]").click();
+assert.equal(w.document.querySelectorAll(".proposal-routine").length, 1);
+$("[data-view=settings]").click();
+assert.equal($("#view-settings").hidden, false);
+assert.ok($("#view-settings").contains($("#pushEnable")));
+assert.ok($("#view-settings").contains($("#exportButton")));
+$("#themeToggle").click();
+assert.ok(w.document.body.classList.contains("dark-mode"));
+$("[data-view=today]").click();
+$("[data-add-routine]").click();
+assert.equal($("#routineFormCard").getAttribute("aria-hidden"), "false");
+w.document.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape" }));
+assert.equal($("#routineFormCard").getAttribute("aria-hidden"), "true");
+w.editRoutine("study");
+assert.equal($("#title").value, "Study Python");
+$("#title").value = "Study JavaScript";
+$("#routineForm").dispatchEvent(new w.Event("submit", { cancelable: true }));
+assert.match($("#todayTimeline").textContent, /Study JavaScript/);
+assert.equal(
+  JSON.parse(w.localStorage.getItem("routines"))[0].title,
+  "Study JavaScript",
+);
+assert.equal(
+  JSON.parse(w.localStorage.getItem("completionHistory"))[date][0],
+  "study",
+);
+console.log(
+  "PASS: four-tab navigation, real progress, completion persistence, filtering independence, settings controls, theme, add/edit dialog, Escape and editing persistence",
+);
+dom.window.close();
