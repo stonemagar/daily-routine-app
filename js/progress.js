@@ -9,6 +9,10 @@
     if (cls) e.className = cls;
     return e;
   };
+  let demoData = null,
+    savedView = null;
+  const data = () => demoData?.state || progressData;
+  const activeRoutines = () => demoData?.routines || routines;
   const rate = (n) => (n === null ? "—" : n + "%");
   const dateFormatter = new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
@@ -17,9 +21,11 @@
   });
   const readable = (d) => dateFormatter.format(new Date(d + "T12:00:00"));
   let period = "week",
-    selected = C.range(period, getTodayKey()),
+    periodAnchor = getTodayKey(),
+    selected = C.periodRange(period, periodAnchor),
     detailId = null,
-    datesDirty = false;
+    datesDirty = false,
+    followCurrent = true;
   $("progressFrom").value = selected.start;
   $("progressTo").value = selected.end;
   $("historyDate").value = getTodayKey();
@@ -28,16 +34,16 @@
     routine: $("progressRoutine").value,
   });
   const allRows = (a, b, filter = filters(), now = new Date()) =>
-    C.dates(a, b).flatMap((d) => C.rows(progressData, d, now, filter));
+    C.dates(a, b).flatMap((d) => C.rows(data(), d, now, filter));
   function options() {
     const category = $("progressCategory").value,
       routine = $("progressRoutine").value;
     const ids = new Set([
-      ...Object.keys(progressData.schedules),
-      ...Object.values(progressData.records).flatMap((rs) => Object.keys(rs)),
+      ...Object.keys(data().schedules),
+      ...Object.values(data().records).flatMap((rs) => Object.keys(rs)),
     ]);
     const entries = [...ids]
-      .map((id) => C.labelRoutine(progressData, id, getTodayKey()))
+      .map((id) => C.labelRoutine(data(), id, getTodayKey()))
       .sort((a, b) => a.title.localeCompare(b.title));
     $("progressCategory").replaceChildren(node("option", "All"));
     [...new Set(entries.map((r) => r.category))]
@@ -54,7 +60,8 @@
     entries.forEach((r) => {
       const o = node(
         "option",
-        r.title + (routines.some((x) => x.id === r.id) ? "" : " (archived)"),
+        r.title +
+          (activeRoutines().some((x) => x.id === r.id) ? "" : " (archived)"),
       );
       o.value = r.id;
       $("progressRoutine").append(o);
@@ -106,7 +113,28 @@
         bar = node("div", undefined, "bar-fill");
       bar.style.height = (100 * g.count) / max + "%";
       track.append(bar);
-      col.append(
+      const button = node("button", undefined, "chart-bar-button");
+      button.type = "button";
+      button.setAttribute(
+        "aria-label",
+        "View " + label + ": " + g.count + " completed",
+      );
+      button.title = "View routines for " + label;
+      button.onclick = () => {
+        chartSelection = {
+          start: g.dates[0],
+          end: g.dates.at(-1),
+          signature: reportSignature(),
+        };
+        chartLimit = 20;
+        renderDrilldown(rs);
+        $("chartDrilldown").scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        $("chartDrilldownHeading").focus({ preventScroll: true });
+      };
+      button.append(
         track,
         node(
           "span",
@@ -117,9 +145,79 @@
             : String(new Date(g.dates[0] + "T12:00:00").getDate()),
         ),
       );
+      col.append(button);
       $("weekBars").append(col);
     });
   }
+  let chartSelection = null,
+    chartLimit = 20;
+  const reportSignature = () =>
+    JSON.stringify([selected, filters(), Boolean(demoData)]);
+  function renderDrilldown(rs) {
+    if (chartSelection?.signature !== reportSignature()) chartSelection = null;
+    $("chartDrilldown").hidden = !chartSelection;
+    if (!chartSelection) return;
+    const rows = rs
+      .filter(
+        (r) => r.date >= chartSelection.start && r.date <= chartSelection.end,
+      )
+      .sort(
+        (a, b) =>
+          b.date.localeCompare(a.date) ||
+          a.routine.startTime.localeCompare(b.routine.startTime),
+      );
+    const summary = C.summary(rows);
+    $("chartDrilldownHeading").textContent =
+      readable(chartSelection.start) +
+      (chartSelection.end === chartSelection.start
+        ? ""
+        : " – " + readable(chartSelection.end));
+    $("chartDrilldownSummary").textContent =
+      `${summary.completed} completed · ${summary.missed} missed · ${summary.skipped} skipped · ${summary.pending} upcoming`;
+    $("chartDrilldownList").replaceChildren();
+    rows.slice(0, chartLimit).forEach((r) => {
+      const row = historyRow(r, false);
+      row.dataset.status = r.status;
+      const review = node("button", "Review date");
+      review.type = "button";
+      review.setAttribute(
+        "aria-label",
+        "Review " + r.routine.title + " on " + r.date,
+      );
+      review.onclick = () => {
+        $("historyDate").value = r.date;
+        renderHistory();
+        heatmap();
+        $("historyDate").scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        $("historyDate").focus({ preventScroll: true });
+      };
+      row.append(review);
+      $("chartDrilldownList").append(row);
+    });
+    if (!rows.length)
+      $("chartDrilldownList").append(
+        node(
+          "p",
+          "No recorded or scheduled routines in this chart period.",
+          "muted",
+        ),
+      );
+    $("moreChartDetails").hidden = rows.length <= chartLimit;
+    $("moreChartDetails").textContent =
+      "Show more (" + Math.max(0, rows.length - chartLimit) + " remaining)";
+  }
+  $("closeChartDrilldown").onclick = () => {
+    chartSelection = null;
+    $("chartDrilldown").hidden = true;
+    $("chartHeading").focus();
+  };
+  $("moreChartDetails").onclick = () => {
+    chartLimit += 20;
+    renderDrilldown(allRows(selected.start, selected.end));
+  };
   function heatmap() {
     const start =
         selected.start > C.shift(selected.end, -90)
@@ -134,7 +232,7 @@
     const offset = (new Date(start + "T12:00:00").getDay() + 6) % 7;
     for (let i = 0; i < offset; i++) $("progressHeatmap").append(node("span"));
     const stats = ds.map((d) =>
-        C.summary(C.rows(progressData, d, new Date(), filters())),
+        C.summary(C.rows(data(), d, new Date(), filters())),
       ),
       max = Math.max(1, ...stats.map((s) => s.completed));
     ds.forEach((d, i) => {
@@ -207,7 +305,8 @@
       });
       select.value = r.status === "missed" ? "pending" : r.status;
       select.onchange = () => {
-        C.setStatus(progressData, r.id, r.date, select.value);
+        if (demoData) return;
+        C.setStatus(data(), r.id, r.date, select.value);
         persistProgress();
         const ids = (completionHistory[r.date] || []).filter(
           (id) => id !== r.id,
@@ -231,14 +330,15 @@
       $("historyNotice").textContent = "Choose today or an earlier date.";
       return;
     }
-    const rs = C.rows(progressData, d, new Date(), filters());
-    $("historyNotice").textContent =
-      d < progressData.startedOn
+    const rs = C.rows(data(), d, new Date(), filters());
+    $("historyNotice").textContent = demoData
+      ? "Demo history is read-only. Return to your progress to edit your own records."
+      : d < data().startedOn
         ? "Only recorded completions are available before " +
-          readable(progressData.startedOn) +
+          readable(data().startedOn) +
           ". Missing schedules cannot be reconstructed."
         : "Changes are saved immediately. Past corrections do not invent a completion time.";
-    rs.forEach((r) => area.append(historyRow(r, true)));
+    rs.forEach((r) => area.append(historyRow(r, !demoData)));
     if (!rs.length)
       area.append(
         node(
@@ -285,7 +385,7 @@
       " remaining)";
   }
   function renderCompleted(rs) {
-    const signature = JSON.stringify([selected, filters()]);
+    const signature = reportSignature();
     if (signature !== completedSelection) completedLimit = 20;
     completedSelection = signature;
     completedRows = rs
@@ -311,14 +411,14 @@
   function renderDetail(rs) {
     $("routineDetail").hidden = !detailId;
     if (!detailId) return;
-    const r = C.labelRoutine(progressData, detailId, getTodayKey()),
+    const r = C.labelRoutine(data(), detailId, getTodayKey()),
       list = rs.filter((x) => x.id === detailId),
       s = C.summary(list),
-      st = C.streaks(progressData, new Date(), {
+      st = C.streaks(data(), new Date(), {
         ...filters(),
         routine: detailId,
       });
-    const lifetime = Object.entries(progressData.records)
+    const lifetime = Object.entries(data().records)
       .filter(([d]) => d <= getTodayKey())
       .filter(
         ([, records]) => records[detailId]?.status === "completed",
@@ -333,11 +433,37 @@
       .forEach((r) => $("routineDetailHistory").append(historyRow(r, false)));
   }
   function render() {
-    C.sync(progressData, routines, getTodayKey());
-    persistProgress();
+    if (!demoData) {
+      C.sync(data(), routines, getTodayKey());
+      persistProgress();
+    }
     options();
+    $("progressDemoBanner").hidden = !demoData;
+    $("progressHeading").textContent = demoData
+      ? "Demo progress"
+      : "Your progress";
+    $("toggleProgressDemo").hidden = Boolean(demoData);
+    $("toggleProgressDemo").textContent = demoData
+      ? "Return to my progress"
+      : "Explore demo progress";
+    $("toggleProgressDemo").setAttribute(
+      "aria-pressed",
+      String(Boolean(demoData)),
+    );
+    $("weeklyGoalForm").hidden = Boolean(demoData);
+    $("goalFeedback").hidden = $("historyFeedback").hidden = Boolean(demoData);
+    $("exportProgressCsv").disabled = $("printProgress").disabled =
+      Boolean(demoData);
+    document.querySelectorAll("[data-progress-period]").forEach((b) => {
+      b.classList.toggle("selected", b.dataset.progressPeriod === period);
+      b.setAttribute(
+        "aria-pressed",
+        String(b.dataset.progressPeriod === period),
+      );
+    });
     if (period !== "custom") {
-      selected = C.range(period, getTodayKey());
+      if (followCurrent) periodAnchor = getTodayKey();
+      selected = C.periodRange(period, periodAnchor);
       if (!datesDirty) {
         $("progressFrom").value = selected.start;
         $("progressTo").value = selected.end;
@@ -349,9 +475,13 @@
         getTodayKey();
     const rs = allRows(selected.start, selected.end),
       s = C.summary(rs),
-      st = C.streaks(progressData, new Date(), filters());
+      st = C.streaks(data(), new Date(), filters());
+    renderNavigation();
     $("progressRangeLabel").textContent =
-      readable(selected.start) + " – " + readable(selected.end);
+      (demoData ? "Demo · " : "") +
+      readable(selected.start) +
+      " – " +
+      readable(selected.end);
     $("ratePercent").textContent = $("ringPercent").textContent = rate(s.rate);
     $("completionRing").style.setProperty("--completion", (s.rate || 0) + "%");
     $("progressTodayLabel").textContent =
@@ -386,12 +516,13 @@
     $("bestStreak").textContent =
       st.best + " " + (st.best === 1 ? "day" : "days");
     renderChart(rs);
+    renderDrilldown(rs);
     renderCompleted(rs);
     heatmap();
     // Goals and milestones deliberately use all routines, independent of report filters.
     const week = C.range("week", getTodayKey()),
       weekly = C.summary(allRows(week.start, week.end, {})).completed,
-      goal = progressData.goals.weekly;
+      goal = data().goals.weekly;
     $("weeklyGoalLabel").textContent =
       `${weekly} of ${goal} completions this calendar week · all routines`;
     $("weeklyGoalProgress").setAttribute("aria-valuemax", goal);
@@ -407,7 +538,7 @@
       Math.min(100, (100 * weekly) / goal) + "%";
     if (document.activeElement !== $("weeklyGoalInput"))
       $("weeklyGoalInput").value = goal;
-    const total = Object.entries(progressData.records)
+    const total = Object.entries(data().records)
       .filter(([d]) => d <= getTodayKey())
       .reduce(
         (n, [, records]) =>
@@ -488,7 +619,7 @@
           (b.s.rate ?? -1) - (a.s.rate ?? -1) || b.s.completed - a.s.completed,
       )
       .forEach(({ id, s }) => {
-        const r = C.labelRoutine(progressData, id, selected.end),
+        const r = C.labelRoutine(data(), id, selected.end),
           b = node("button");
         b.type = "button";
         b.className = "insight-row";
@@ -518,14 +649,110 @@
     renderDetail(rs);
     renderHistory();
     $("progressTrackingNote").textContent =
-      "Schedule tracking began " +
-      readable(progressData.startedOn) +
-      ". Completions are stored on this device and included in Settings → Export backup.";
+      (demoData
+        ? "Fictional demo schedule began "
+        : "Schedule tracking began ") +
+      readable(data().startedOn) +
+      (demoData
+        ? ". Demo progress is temporary and never saved to your device."
+        : ". Completions are stored on this device and included in Settings → Export backup.");
   }
+  function renderNavigation() {
+    const custom = period === "custom";
+    $("previousProgressPeriod").disabled = custom;
+    $("nextProgressPeriod").disabled =
+      custom || !C.periodRange(period, C.movePeriod(period, periodAnchor, 1));
+    $("previousProgressPeriod").setAttribute(
+      "aria-label",
+      "Previous " + (custom ? "period" : period),
+    );
+    $("nextProgressPeriod").setAttribute(
+      "aria-label",
+      "Next " + (custom ? "period" : period),
+    );
+    $("currentProgressPeriod").textContent = {
+      day: "Today",
+      week: "This week",
+      month: "This month",
+      year: "This year",
+      custom: "This week",
+    }[period];
+    $("periodNavigationHint").hidden = !custom;
+  }
+  function navigatePeriod(offset) {
+    if (period === "custom") return;
+    const target = C.movePeriod(period, periodAnchor, offset);
+    if (!C.periodRange(period, target)) return;
+    periodAnchor = target;
+    followCurrent =
+      C.range(period, target).start === C.range(period, getTodayKey()).start;
+    datesDirty = false;
+    $("progressFilterError").textContent = "";
+    render();
+  }
+  $("previousProgressPeriod").onclick = () => navigatePeriod(-1);
+  $("nextProgressPeriod").onclick = () => navigatePeriod(1);
+  $("currentProgressPeriod").onclick = () => {
+    if (period === "custom") period = "week";
+    periodAnchor = getTodayKey();
+    followCurrent = true;
+    datesDirty = false;
+    $("progressFilterError").textContent = "";
+    render();
+  };
+  function toggleDemo() {
+    chartSelection = null;
+    if (!demoData) {
+      savedView = {
+        period,
+        periodAnchor,
+        followCurrent,
+        selected: { ...selected },
+        detailId,
+        datesDirty,
+        category: filters().category,
+        routine: filters().routine,
+        history: $("historyDate").value,
+        from: $("progressFrom").value,
+        to: $("progressTo").value,
+      };
+      demoData = C.demo();
+      period = "month";
+      periodAnchor = getTodayKey();
+      followCurrent = true;
+      datesDirty = false;
+      detailId = null;
+      options();
+      $("progressCategory").value = "All";
+      $("progressRoutine").value = "";
+      $("historyDate").value = getTodayKey();
+    } else {
+      demoData = null;
+      ({ period, periodAnchor, followCurrent, selected, detailId, datesDirty } =
+        savedView);
+      options();
+      $("progressCategory").value = savedView.category;
+      $("progressRoutine").value = savedView.routine;
+      $("historyDate").value = savedView.history;
+      $("progressFrom").value = savedView.from;
+      $("progressTo").value = savedView.to;
+    }
+    $("progressFilterError").textContent = "";
+    render();
+  }
+  $("toggleProgressDemo").onclick = toggleDemo;
+  $("exitProgressDemo").onclick = toggleDemo;
+  document.querySelectorAll("[data-view]").forEach((b) =>
+    b.addEventListener("click", () => {
+      if (demoData && b.dataset.view !== "progress") toggleDemo();
+    }),
+  );
   document.querySelectorAll("[data-progress-period]").forEach(
     (b) =>
       (b.onclick = () => {
         period = b.dataset.progressPeriod;
+        periodAnchor = getTodayKey();
+        followCurrent = true;
         datesDirty = false;
         document.querySelectorAll("[data-progress-period]").forEach((x) => {
           x.classList.toggle("selected", x === b);
@@ -551,6 +778,7 @@
     }
     selected = { start, end };
     period = "custom";
+    followCurrent = false;
     datesDirty = false;
     document.querySelectorAll("[data-progress-period]").forEach((x) => {
       x.classList.remove("selected");
@@ -577,9 +805,10 @@
   };
   $("weeklyGoalForm").onsubmit = (e) => {
     e.preventDefault();
+    if (demoData) return;
     const goal = Number($("weeklyGoalInput").value);
     if (!Number.isInteger(goal) || goal < 1 || goal > 9999) return;
-    progressData.goals.weekly = goal;
+    data().goals.weekly = goal;
     persistProgress();
     render();
     $("goalFeedback").textContent = "Weekly goal saved.";
@@ -590,6 +819,7 @@
     return '"' + s.replaceAll('"', '""') + '"';
   };
   $("exportProgressCsv").onclick = () => {
+    if (demoData) return;
     const rs = allRows(selected.start, selected.end),
       headers = [
         "Date",
@@ -625,6 +855,7 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   $("printProgress").onclick = () => {
+    if (demoData) return;
     let report = $("printReport");
     if (!report) {
       report = node("section");
@@ -651,7 +882,7 @@
       node(
         "p",
         "Schedule tracking began " +
-          readable(progressData.startedOn) +
+          readable(data().startedOn) +
           ". Upcoming and skipped routines are excluded from rates. Older completions may have no known schedule.",
       ),
     );

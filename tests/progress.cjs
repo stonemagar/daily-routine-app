@@ -105,3 +105,35 @@ assert.deepEqual(C.streaks(s, now), { current: 0, best: 3 });
 console.log(
   "PASS analytics: legacy migration, calendar arithmetic, snapshots, deletion, statuses, timestamps, due-only rates, filters, scheduled-day streaks and backup validation",
 );
+// Calendar navigation includes whole past periods and handles leap years safely.
+assert.deepEqual(C.periodRange("week", "2026-10-21", "2026-10-28"), {
+  start: "2026-10-19",
+  end: "2026-10-25",
+});
+assert.deepEqual(C.periodRange("month", "2024-02-15", "2026-10-28"), {
+  start: "2024-02-01",
+  end: "2024-02-29",
+});
+assert.deepEqual(C.periodRange("year", "2025-10-28", "2026-10-28"), {
+  start: "2025-01-01",
+  end: "2025-12-31",
+});
+assert.deepEqual(C.periodRange("month", "2026-10-01", "2026-10-28"), {
+  start: "2026-10-01",
+  end: "2026-10-28",
+});
+assert.equal(C.periodRange("month", "2026-11-01", "2026-10-28"), null);
+assert.equal(C.movePeriod("month", "2026-03-31", -1), "2026-02-01");
+assert.equal(C.movePeriod("year", "2024-02-29", 1), "2025-01-01");
+assert.equal(C.movePeriod("week", "2026-01-01", -1), "2025-12-25");
+const demo = C.demo(now);
+assert.ok(C.validState(demo.state));
+assert.equal(demo.routines.length, 3);
+assert.ok(C.summary(C.rows(demo.state, "2026-10-27", now)).completed > 0);
+assert.deepEqual(C.rows(demo.state, "2026-10-29", now), []);
+assert.ok(
+  Object.keys(demo.state.records).every((date) => date <= "2026-10-28"),
+);
+console.log(
+  "PASS full-period navigation, leap-year boundaries and isolated fictional demo ledger",
+);

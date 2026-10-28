@@ -311,3 +311,65 @@
   background: var(--primary);
   border-radius: 10px;
 }
+
+.period-navigation {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 7px;
+}
+.period-navigation button {
+  font-size: 12px !important;
+  min-width: 0;
+  padding: 10px 5px !important;
+}
+#view-progress button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.progress-demo-banner {
+  padding: 16px;
+  border: 1px solid #087dff66;
+  background: #087dff12;
+  border-radius: 14px;
+  font-size: 13px;
+}
+.progress-demo-banner strong {
+  color: var(--primary);
+}
+.progress-demo-banner p {
+  margin: 8px 0 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+#view-progress #toggleProgressDemo {
+  align-self: flex-start;
+  color: var(--primary);
+  font-size: 12px;
+}
+#view-progress .chart-bar-button {
+  width: 100%;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 7px !important;
+  font: inherit;
+  display: block;
+  color: inherit;
+}
+#view-progress .chart-bar-button:hover .bar-track {
+  outline: 1px solid var(--primary);
+}
+#chartDrilldown .completed-heading {
+  align-items: flex-start;
+  gap: 10px;
+}
+#chartDrilldownHeading {
+  font-size: 14px;
+  line-height: 1.5;
+}
+#chartDrilldownList button {
+  font-size: 12px !important;
+}
+#weeklyGoalForm[hidden] {
+  display: none !important;
+}

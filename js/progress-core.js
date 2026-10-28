@@ -290,6 +290,89 @@
     const day = new Date(end + "T12:00:00").getDay();
     return { start: shift(end, -((day + 6) % 7)), end };
   }
+  // Full calendar periods for browsing; current periods stop at today.
+  function periodRange(period, anchor, today = dateKey(new Date())) {
+    const start = range(period, anchor).start;
+    let end = anchor;
+    if (period === "week") end = shift(start, 6);
+    if (period === "month")
+      end = dateKey(
+        new Date(Number(start.slice(0, 4)), Number(start.slice(5, 7)), 0, 12),
+      );
+    if (period === "year") end = start.slice(0, 4) + "-12-31";
+    if (start > today) return null;
+    return { start, end: end > today ? today : end };
+  }
+  function movePeriod(period, anchor, offset) {
+    const d = new Date(anchor + "T12:00:00");
+    if (period === "month") {
+      d.setDate(1);
+      d.setMonth(d.getMonth() + offset);
+    } else if (period === "year") {
+      d.setMonth(0, 1);
+      d.setFullYear(d.getFullYear() + offset);
+    } else d.setDate(d.getDate() + offset * (period === "week" ? 7 : 1));
+    return dateKey(d);
+  }
+  // Fictional data is returned in memory only. It never accesses browser storage.
+  function demo(now = new Date()) {
+    const today = dateKey(now),
+      start = now.getFullYear() - 1 + "-01-01";
+    const everyday = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+    const routines = [
+      {
+        id: "demo-stretch",
+        title: "Morning stretch",
+        category: "Health",
+        startTime: "07:00",
+        endTime: "07:20",
+        days: everyday,
+      },
+      {
+        id: "demo-study",
+        title: "Focused study",
+        category: "Study",
+        startTime: "10:00",
+        endTime: "11:00",
+        days: everyday.slice(0, 5),
+      },
+      {
+        id: "demo-walk",
+        title: "Evening walk",
+        category: "Health",
+        startTime: "18:00",
+        endTime: "18:30",
+        days: everyday,
+      },
+    ];
+    const state = create(routines, {}, start);
+    state.goals.weekly = 12;
+    for (const [i, date] of dates(start, today).entries()) {
+      for (const [j, r] of routines.entries()) {
+        const occurrence = rows(state, date, now, { routine: r.id })[0];
+        if (!occurrence?.eligible) continue;
+        if ((i * 3 + j * 7) % 11 < 8 || date >= shift(today, -4)) {
+          setStatus(
+            state,
+            r.id,
+            date,
+            "completed",
+            new Date(date + "T" + r.endTime + ":00"),
+          );
+        } else if ((i + j) % 5 === 0)
+          setStatus(state, r.id, date, "skipped", now);
+      }
+    }
+    return { state, routines };
+  }
   return {
     dateKey,
     validDate,
@@ -305,5 +388,8 @@
     summary,
     streaks,
     range,
+    periodRange,
+    movePeriod,
+    demo,
   };
 });

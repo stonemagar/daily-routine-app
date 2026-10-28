@@ -163,6 +163,56 @@ assert.equal($("#periodCompletedCount").textContent, "0");
 assert.match($("#periodCompletedList").textContent, /No completed routines/);
 $("#progressCategory").value = "All";
 $("#progressCategory").dispatchEvent(new w.Event("change"));
+// Whole-period navigation, chart drilldown and read-only demo isolation.
+$("[data-progress-period=month]").click();
+assert.equal($("#nextProgressPeriod").disabled, true);
+$("#previousProgressPeriod").click();
+const previousMonth = w.ProgressCore.movePeriod("month", date, -1);
+assert.equal($("#progressFrom").value, previousMonth);
+assert.equal(
+  $("#progressTo").value,
+  w.ProgressCore.periodRange("month", previousMonth).end,
+);
+assert.equal($("#nextProgressPeriod").disabled, false);
+$("#nextProgressPeriod").click();
+assert.equal($("#progressFrom").value, date.slice(0, 7) + "-01");
+$("[data-progress-period=week]").click();
+$(".chart-bar-button").click();
+assert.equal($("#chartDrilldown").hidden, false);
+assert.match($("#chartDrilldownSummary").textContent, /completed/);
+assert.ok(
+  w.document.querySelectorAll("#chartDrilldownList .history-row").length > 0,
+);
+$("[data-progress-period=year]").click();
+assert.equal($("#chartDrilldown").hidden, true);
+$("#progressCategory").value = "Study";
+$("#progressCategory").dispatchEvent(new w.Event("change"));
+const beforeDemo = JSON.stringify(Object.entries(w.localStorage).sort());
+const beforeDemoRange = $("#progressRangeLabel").textContent;
+$("#toggleProgressDemo").click();
+assert.equal($("#progressDemoBanner").hidden, false);
+assert.equal($("#toggleProgressDemo").getAttribute("aria-pressed"), "true");
+assert.match($("#routineStats").textContent, /Morning stretch/);
+assert.equal(w.document.querySelectorAll("#progressHistory select").length, 0);
+assert.equal($("#weeklyGoalForm").hidden, true);
+assert.equal($("#exportProgressCsv").disabled, true);
+assert.equal($("#printProgress").disabled, true);
+$("#weeklyGoalInput").value = "999";
+$("#weeklyGoalForm").dispatchEvent(new w.Event("submit", { cancelable: true }));
+$("#previousProgressPeriod").click();
+$(".chart-bar-button").click();
+assert.equal($("#chartDrilldown").hidden, false);
+assert.equal(JSON.stringify(Object.entries(w.localStorage).sort()), beforeDemo);
+$("#exitProgressDemo").click();
+assert.equal($("#progressDemoBanner").hidden, true);
+assert.equal($("#progressRangeLabel").textContent, beforeDemoRange);
+assert.equal($("#progressCategory").value, "Study");
+assert.equal($("#exportProgressCsv").disabled, false);
+assert.equal(JSON.stringify(Object.entries(w.localStorage).sort()), beforeDemo);
+$("#toggleProgressDemo").click();
+$("[data-view=today]").click();
+assert.equal($("#progressDemoBanner").hidden, true);
+assert.equal(JSON.stringify(Object.entries(w.localStorage).sort()), beforeDemo);
 // Backup validation accepts legacy history and rejects malformed new ledgers.
 const storedRoutine = JSON.parse(w.localStorage.getItem("routines"))[0];
 const ledger = JSON.parse(w.localStorage.getItem("routineProgress"));
