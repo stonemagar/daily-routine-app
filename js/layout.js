@@ -147,8 +147,7 @@
     return button;
   }
   function renderViews() {
-    const today = todayRoutines(),
-      done = today.filter((r) => isRoutineCompleted(r.id));
+    const today = todayRoutines();
     updateProgress();
     $("todayCount").textContent = today.length + " routines";
     const timeline = $("todayTimeline");
@@ -218,89 +217,6 @@
       timeline
         .querySelectorAll(".timeline-row")
         [today.indexOf(next)]?.classList.add("is-upcoming");
-    $("completedStat").textContent = done.length + " of " + today.length;
-    $("completionStat").textContent = today.length
-      ? Math.round((done.length / today.length) * 100) + "% of today’s schedule"
-      : "No routines today";
-    // A streak counts consecutive local calendar days with any saved completion.
-    let streak = 0;
-    const date = new Date();
-    date.setHours(12, 0, 0, 0);
-    const key = (d) =>
-      [
-        d.getFullYear(),
-        String(d.getMonth() + 1).padStart(2, "0"),
-        String(d.getDate()).padStart(2, "0"),
-      ].join("-");
-    if (!(completionHistory[key(date)] || []).length)
-      date.setDate(date.getDate() - 1);
-    while ((completionHistory[key(date)] || []).length) {
-      streak++;
-      date.setDate(date.getDate() - 1);
-    }
-    $("streakStat").textContent =
-      streak + " " + (streak === 1 ? "day" : "days");
-    const days = [];
-    for (let offset = 6; offset >= 0; offset--) {
-      const d = new Date();
-      d.setHours(12, 0, 0, 0);
-      d.setDate(d.getDate() - offset);
-      days.push({
-        label: d.toLocaleDateString("en-GB", { weekday: "short" }),
-        date: d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
-        count: new Set(completionHistory[key(d)] || []).size,
-      });
-    }
-    const max = Math.max(1, ...days.map((d) => d.count));
-    $("weekBars").replaceChildren();
-    days.forEach((d, index) => {
-      const col = node("div", "week-day" + (index === 6 ? " is-today" : ""));
-      col.setAttribute("role", "listitem");
-      col.setAttribute("aria-label", d.date + ": " + d.count + " completed");
-      col.append(node("span", null, String(d.count)));
-      const track = node("div", "bar-track");
-      track.setAttribute("aria-hidden", "true");
-      const fill = node("div", "bar-fill");
-      fill.style.height = (d.count / max) * 100 + "%";
-      track.append(fill);
-      col.append(track, node("span", null, d.label));
-      $("weekBars").append(col);
-    });
-    $("completedList").replaceChildren();
-    for (const r of done) {
-      const line = node("div", "completed-line");
-      const copy = node("div", "completed-copy");
-      copy.append(
-        node("strong", null, r.title),
-        node(
-          "small",
-          null,
-          formatTime(r.startTime) + " – " + formatTime(r.endTime),
-        ),
-      );
-      const icon = node("span", "category-icon");
-      icon.dataset.category = r.category;
-      icon.append(node("i", "bi bi-" + iconFor(r.category)));
-      line.append(
-        node("span", "complete-dot", "✓"),
-        icon,
-        copy,
-        node("i", "bi bi-chevron-right"),
-      );
-      $("completedList").append(line);
-    }
-    if (!done.length)
-      $("completedList").append(
-        node("p", "muted", "Complete a routine to see it here."),
-      );
-  }
-  let chartRange = "week";
-  function localKey(d) {
-    return [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, "0"),
-      String(d.getDate()).padStart(2, "0"),
-    ].join("-");
   }
   function syncChips() {
     document.querySelectorAll("[data-day]").forEach((b) => {
@@ -354,7 +270,6 @@
       .forEach((card) => {
         const r = routines.find((r) => String(r.id) === card.dataset.routineId);
         if (!r) return;
-        const menu = card.querySelector(".routine-menu");
         card.replaceChildren();
         card.className = "routine-item proposal-routine";
         const icon = node("span", "category-icon");
@@ -390,127 +305,18 @@
         card.append(icon, copy, edit);
       });
   }
-  function renderChart() {
-    const groups = [];
-    const now = new Date();
-    now.setHours(12, 0, 0, 0);
-    if (chartRange === "week")
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        groups.push({
-          label: d.toLocaleDateString("en-GB", { weekday: "narrow" }),
-          description: d.toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-          }),
-          count: new Set(completionHistory[localKey(d)] || []).size,
-        });
-      }
-    if (chartRange === "month")
-      for (let i = 3; i >= 0; i--) {
-        let count = 0;
-        for (let j = i * 7; j < (i + 1) * 7; j++) {
-          const d = new Date(now);
-          d.setDate(d.getDate() - j);
-          count += new Set(completionHistory[localKey(d)] || []).size;
-        }
-        groups.push({
-          label: "W" + (4 - i),
-          description: "Week " + (4 - i) + " of the last 28 days",
-          count,
-        });
-      }
-    if (chartRange === "year")
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1, 12);
-        const prefix = localKey(d).slice(0, 7);
-        let count = 0;
-        Object.entries(completionHistory).forEach(([date, ids]) => {
-          if (date.startsWith(prefix)) count += new Set(ids).size;
-        });
-        groups.push({
-          label: d.toLocaleDateString("en-GB", { month: "narrow" }),
-          description: d.toLocaleDateString("en-GB", {
-            month: "long",
-            year: "numeric",
-          }),
-          count,
-        });
-      }
-    $("chartHeading").textContent = {
-      week: "Weekly completion",
-      month: "Monthly completion",
-      year: "Yearly completion",
-    }[chartRange];
-    const max = Math.max(1, ...groups.map((g) => g.count));
-    $("weekBars").replaceChildren();
-    groups.forEach((g) => {
-      const col = node("div", "week-day");
-      col.setAttribute("role", "listitem");
-      col.setAttribute(
-        "aria-label",
-        g.description + ": " + g.count + " completed",
-      );
-      col.title = g.count + " completed";
-      const track = node("div", "bar-track");
-      const bar = node("div", "bar-fill");
-      bar.style.height = (g.count / max) * 100 + "%";
-      track.append(bar);
-      col.append(track, node("span", null, g.label));
-      $("weekBars").append(col);
-    });
-  }
-  document.querySelectorAll("[data-range]").forEach((b) =>
-    b.addEventListener("click", () => {
-      chartRange = b.dataset.range;
-      document.querySelectorAll("[data-range]").forEach((other) => {
-        const selected = other === b;
-        other.classList.toggle("selected", selected);
-        other.setAttribute("aria-pressed", String(selected));
-      });
-      renderChart();
-    }),
-  );
   function matchProposal() {
     $("screenDate").textContent = new Date().toLocaleDateString("en-GB", {
       weekday: "long",
       day: "numeric",
       month: "long",
     });
-    const today = todayRoutines(),
-      done = today.filter((r) => isRoutineCompleted(r.id));
-    const percent = today.length
-      ? Math.round((done.length / today.length) * 100)
-      : 0;
-    $("ratePercent").textContent = percent + "%";
-    $("ringPercent").textContent = percent + "%";
-    $("completionRing").style.setProperty("--completion", percent + "%");
-    $("progressTodayLabel").textContent =
-      done.length + " of " + today.length + " completed today";
-    $("completedCount").textContent = done.length + "/" + today.length;
-    const dates = Object.keys(completionHistory)
-      .filter((k) => (completionHistory[k] || []).length)
-      .sort();
-    let best = 0,
-      run = 0,
-      previous = null;
-    for (const key of dates) {
-      const d = new Date(key + "T12:00:00");
-      const yesterday = new Date(d);
-      yesterday.setDate(d.getDate() - 1);
-      run = previous === localKey(yesterday) ? run + 1 : 1;
-      best = Math.max(best, run);
-      previous = key;
-    }
-    $("bestStreak").textContent = best + " " + (best === 1 ? "day" : "days");
     $("themeToggle").setAttribute(
       "aria-checked",
       String(document.body.classList.contains("dark-mode")),
     );
     syncChips();
     routineCards();
-    renderChart();
     localIcons();
   }
   $("deleteRoutineFromEditor").addEventListener("click", () => {

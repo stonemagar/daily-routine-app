@@ -37,12 +37,21 @@ let completionHistory =
   JSON.parse(localStorage.getItem("completionHistory")) || {};
 
 let editingRoutineId = null;
+let progressData = null;
+function persistProgress() {
+  if (progressData)
+    localStorage.setItem("routineProgress", JSON.stringify(progressData));
+}
 
 /* ------------------------------
    Local storage
 ------------------------------ */
 
 function saveRoutines() {
+  if (progressData) {
+    ProgressCore.sync(progressData, routines, getTodayKey());
+    persistProgress();
+  }
   localStorage.setItem("routines", JSON.stringify(routines));
   window.dispatchEvent(new Event("routine-data-changed"));
 }
@@ -124,6 +133,15 @@ function toggleRoutine(id) {
     completionHistory[todayKey] = [...completedIds, id];
   }
 
+  if (progressData) {
+    ProgressCore.setStatus(
+      progressData,
+      id,
+      todayKey,
+      completionHistory[todayKey].includes(id) ? "completed" : "pending",
+    );
+    persistProgress();
+  }
   saveCompletionHistory();
   renderRoutines();
 }
@@ -155,12 +173,9 @@ function openRoutineForm(options = {}) {
   setRoutineFormExpanded(true);
 
   if (focusTitle) {
-    window.setTimeout(
-      () => {
-        document.getElementById("title").focus();
-      },
-      100,
-    );
+    window.setTimeout(() => {
+      document.getElementById("title").focus();
+    }, 100);
   }
 }
 
@@ -194,11 +209,11 @@ function resetRoutineForm() {
   selectTodayByDefault();
   showDayError(false);
 
-  submitButton.textContent = "Add routine";
+  submitButton.textContent = "Create activity";
   cancelEditButton.classList.add("d-none");
 
   if (routineFormHeading) {
-    routineFormHeading.textContent = "Add routine";
+    routineFormHeading.textContent = "New activity";
   }
 
   setRoutineFormExpanded(false);
@@ -699,7 +714,7 @@ routineForm.addEventListener("submit", function (event) {
     editingRoutineId = null;
 
     routineForm.querySelector('button[type="submit"]').textContent =
-      "Add routine";
+      "Create activity";
   } else {
     routines.push(createRoutine(formData, selectedDays));
   }
@@ -749,9 +764,9 @@ function editRoutine(id) {
     focusTitle: false,
   });
 
-  submitButton.textContent = "Update routine";
+  submitButton.textContent = "Save changes";
   if (routineFormHeading) {
-    routineFormHeading.textContent = "Edit routine";
+    routineFormHeading.textContent = "Edit activity";
   }
   cancelEditButton.classList.remove("d-none");
 
@@ -780,18 +795,7 @@ function deleteRoutine(id) {
 
   routines = routines.filter((routineItem) => routineItem.id !== id);
 
-  Object.keys(completionHistory).forEach((date) => {
-    completionHistory[date] = completionHistory[date].filter(
-      (routineId) => routineId !== id,
-    );
-
-    if (completionHistory[date].length === 0) {
-      delete completionHistory[date];
-    }
-  });
-
-  saveCompletionHistory();
-
+  // Retain completion history and schedule snapshots after deletion.
   if (editingRoutineId === id) {
     resetRoutineForm();
   }
@@ -965,7 +969,8 @@ function migrateRoutineDetails() {
 function exportBackup() {
   const backupData = {
     app: "Daily Routine App",
-    version: 2,
+    version: 3,
+    progressData,
     exportedAt: new Date().toISOString(),
     routines,
     completionHistory,
@@ -1006,17 +1011,47 @@ function isValidBackup(data) {
     return false;
   }
 
+  if (
+    Array.isArray(data.completionHistory) ||
+    !Object.entries(data.completionHistory).every(
+      ([date, ids]) =>
+        ProgressCore.validDate(date) &&
+        Array.isArray(ids) &&
+        ids.every((id) => typeof id === "string"),
+    )
+  )
+    return false;
+  if (
+    data.progressData !== undefined &&
+    !ProgressCore.validState(data.progressData)
+  )
+    return false;
+  if (new Set(data.routines.map((r) => r.id)).size !== data.routines.length)
+    return false;
   return data.routines.every((routine) => {
     const hasValidDays =
       Array.isArray(routine.days) || typeof routine.day === "string";
 
     return (
       typeof routine.id === "string" &&
+      !["__proto__", "constructor", "prototype"].includes(routine.id) &&
       typeof routine.title === "string" &&
-      typeof routine.startTime === "string" &&
-      typeof routine.endTime === "string" &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(routine.startTime) &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(routine.endTime) &&
       typeof routine.category === "string" &&
-      hasValidDays
+      hasValidDays &&
+      (Array.isArray(routine.days) ? routine.days : [routine.day]).every(
+        (day) =>
+          [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ].includes(day),
+      )
     );
   });
 }
@@ -1043,6 +1078,10 @@ function importBackup(file) {
 
       routines = backupData.routines;
       completionHistory = backupData.completionHistory;
+      progressData =
+        backupData.progressData ||
+        ProgressCore.create(routines, completionHistory, getTodayKey());
+      persistProgress();
 
       migrateOldDayFormat();
       /* Add default notes and priority to older backups */
@@ -1054,11 +1093,11 @@ function importBackup(file) {
       if (backupData.theme === "dark") {
         localStorage.setItem("theme", "dark");
         document.body.classList.add("dark-mode");
-        themeToggle.textContent = "Light mode";
+        updateThemeButton(true);
       } else {
         localStorage.setItem("theme", "light");
         document.body.classList.remove("dark-mode");
-        themeToggle.textContent = "Dark mode";
+        updateThemeButton(false);
       }
 
       renderRoutines();
@@ -1244,6 +1283,20 @@ displayTodayDate();
 migrateOldDayFormat();
 migrateOldCompletionData();
 migrateRoutineDetails();
+try {
+  const savedProgress = JSON.parse(localStorage.getItem("routineProgress"));
+  progressData = ProgressCore.validState(savedProgress)
+    ? savedProgress
+    : ProgressCore.create(routines, completionHistory, getTodayKey());
+} catch (_) {
+  progressData = ProgressCore.create(
+    routines,
+    completionHistory,
+    getTodayKey(),
+  );
+}
+ProgressCore.sync(progressData, routines, getTodayKey());
+persistProgress();
 selectTodayByDefault();
 loadTheme();
 renderRoutines();

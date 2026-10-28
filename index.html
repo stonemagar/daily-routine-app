@@ -28,6 +28,8 @@
     <!-- App icon displayed in the browser tab -->
     <link href="assets/icons/icon-192.png" rel="icon" type="image/png" />
     <link href="css/layout.css" rel="stylesheet" />
+    <link href="css/progress.css" rel="stylesheet" />
+    <link href="css/activity-editor.css" rel="stylesheet" />
   </head>
   <body>
     <div class="app-shell">
@@ -207,68 +209,325 @@
         >
           <div class="screen-title">
             <h2 id="progressHeading" tabindex="-1">Your progress</h2>
-          </div>
-          <div aria-label="Progress period" class="range-tabs" role="group">
             <button
-              aria-pressed="true"
-              class="selected"
-              data-range="week"
+              id="toggleProgressDemo"
               type="button"
+              aria-pressed="false"
+              aria-label="Explore demo progress"
+            >
+              Demo
+            </button>
+          </div>
+
+          <aside
+            id="progressDemoBanner"
+            class="progress-demo-banner"
+            hidden=""
+            role="status"
+          >
+            <strong>Demo progress</strong>
+            <p>
+              Fictional sample data. Your routines and saved history are
+              unchanged. History and goal editing are disabled in this preview.
+            </p>
+            <button id="exitProgressDemo" type="button">
+              Return to my progress
+            </button>
+          </aside>
+          <div class="range-tabs" role="group" aria-label="Progress period">
+            <button type="button" data-progress-period="day">Day</button>
+            <button
+              type="button"
+              data-progress-period="week"
+              class="selected"
+              aria-pressed="true"
             >
               Week
             </button>
-            <button aria-pressed="false" data-range="month" type="button">
-              Month
+            <button type="button" data-progress-period="month">Month</button>
+            <button type="button" data-progress-period="year">Year</button>
+          </div>
+          <div
+            class="period-navigation"
+            role="group"
+            aria-label="Browse progress periods"
+          >
+            <button
+              id="previousProgressPeriod"
+              type="button"
+              aria-label="Previous period"
+            >
+              ← Previous
             </button>
-            <button aria-pressed="false" data-range="year" type="button">
-              Year
+            <button id="currentProgressPeriod" type="button">
+              Current period
+            </button>
+            <button
+              id="nextProgressPeriod"
+              type="button"
+              aria-label="Next period"
+            >
+              Next →
             </button>
           </div>
-          <section class="progress-summary">
+          <p id="periodNavigationHint" class="chart-note" hidden="">
+            Choose Day, Week, Month or Year to use period navigation.
+          </p>
+          <div class="progress-range-tools">
+            <p class="muted" id="progressRangeLabel"></p>
+            <details class="analytics-filters">
+              <summary>Filter progress</summary>
+              <div class="analytics-filter-grid">
+                <label>From<input type="date" id="progressFrom" /></label>
+                <label>To<input type="date" id="progressTo" /></label>
+                <label
+                  >Category<select id="progressCategory">
+                    <option>All</option>
+                  </select></label
+                >
+                <label
+                  >Routine<select id="progressRoutine">
+                    <option value="">All routines</option>
+                  </select></label
+                >
+              </div>
+              <button type="button" id="applyProgressFilters">
+                Apply dates
+              </button>
+              <p id="progressFilterError" role="alert"></p>
+            </details>
+          </div>
+
+          <section class="progress-summary" aria-label="Completion summary">
             <div>
               <p>Completion rate</p>
-              <strong id="ratePercent"> 0% </strong>
-              <p id="progressTodayLabel">0 of 0 completed today</p>
+              <strong id="ratePercent">—</strong>
+              <p id="progressTodayLabel"></p>
+              <p
+                class="progress-comparison overview-comparison"
+                id="progressComparison"
+              ></p>
             </div>
             <div class="completion-ring" id="completionRing">
-              <span id="ringPercent"> 0% </span>
+              <span id="ringPercent">—</span>
             </div>
           </section>
+
+          <div class="analytics-counts" id="progressCounts"></div>
           <section class="weekly-card">
-            <h3 id="chartHeading">Weekly completion</h3>
+            <h3 id="chartHeading" tabindex="-1">Completions over time</h3>
             <div
-              aria-label="Completed routines"
-              class="week-bars"
               id="weekBars"
+              class="week-bars"
               role="list"
+              aria-label="Completions over time"
             ></div>
-            <p class="chart-note">Completed routines from saved history</p>
+            <div
+              id="chartLegend"
+              class="analytics-chart-legend"
+              aria-label="Chart legend"
+            ></div>
+            <p id="chartRateEmpty" class="chart-note" hidden="">
+              No completion rates are available for this period yet.
+            </p>
+            <p id="chartScrollHint" class="chart-note" hidden="">
+              Swipe or scroll the chart horizontally to explore each date.
+            </p>
+            <p id="chartNote" class="chart-note"></p>
           </section>
-          <div class="streak-grid">
+          <div class="streak-grid overview-streaks">
             <div class="streak-card">
-              <i aria-hidden="true" class="bi bi-flame"> </i>
               <div>
-                <strong id="streakStat"> 0 days </strong>
-                <small> Current streak </small>
+                <strong id="streakStat">0 days</strong
+                ><small>Current streak</small>
               </div>
             </div>
             <div class="streak-card">
-              <i aria-hidden="true" class="bi bi-trophy"> </i>
               <div>
-                <strong id="bestStreak"> 0 days </strong>
-                <small> Best streak </small>
+                <strong id="bestStreak">0 days</strong
+                ><small>Best streak</small>
               </div>
             </div>
           </div>
-          <section class="completed-section">
+          <section
+            id="chartDrilldown"
+            class="layout-card"
+            hidden=""
+            aria-labelledby="chartDrilldownHeading"
+          >
             <div class="completed-heading">
-              <h3>Completed today</h3>
-              <span id="completedCount"> 0/0 </span>
+              <h3 id="chartDrilldownHeading" tabindex="-1">Chart details</h3>
+              <button
+                id="closeChartDrilldown"
+                type="button"
+                aria-label="Close chart details"
+              >
+                Close
+              </button>
             </div>
-            <div id="completedList"></div>
+            <p id="chartDrilldownSummary" class="chart-note"></p>
+            <div id="chartDrilldownList"></div>
+            <button id="moreChartDetails" type="button" hidden="">
+              Show more
+            </button>
           </section>
-          <span hidden="" id="completedStat"> </span>
-          <span hidden="" id="completionStat"> </span>
+          <details id="completedDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Completed routines</span
+              ><span id="periodCompletedCount" class="disclosure-meta"></span>
+            </summary>
+            <div class="disclosure-body">
+              <p id="periodCompletedDescription" class="chart-note"></p>
+              <div id="periodCompletedList"></div>
+              <button id="showMoreCompleted" type="button" hidden="">
+                Show more
+              </button>
+            </div>
+          </details>
+          <details id="calendarDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Consistency calendar</span
+              ><span id="heatmapLabel" class="disclosure-meta"></span>
+            </summary>
+            <div class="disclosure-body">
+              <p class="chart-note">
+                Colour shows completion count. Tap a date to review it.
+              </p>
+              <div
+                id="progressHeatmap"
+                class="progress-heatmap"
+                aria-label="Completion calendar"
+              ></div>
+              <div class="heatmap-legend">
+                <span>Fewer</span><i></i><i></i><i></i><i></i><span>More</span>
+              </div>
+            </div>
+          </details>
+
+          <details id="goalsDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Goals &amp; milestones</span
+              ><span id="goalCompactLabel" class="disclosure-meta"
+                >This week</span
+              >
+            </summary>
+            <div class="disclosure-body">
+              <p id="weeklyGoalLabel"></p>
+              <div
+                id="weeklyGoalProgress"
+                class="goal-track"
+                role="progressbar"
+                aria-label="Weekly completions"
+                aria-valuemin="0"
+                aria-valuemax="20"
+                aria-valuenow="0"
+              >
+                <span></span>
+              </div>
+              <form id="weeklyGoalForm" class="goal-form">
+                <label for="weeklyGoalInput">Completions per week</label
+                ><input
+                  id="weeklyGoalInput"
+                  type="number"
+                  min="1"
+                  max="9999"
+                  required=""
+                /><button type="submit">Save goal</button>
+              </form>
+              <p id="goalFeedback" role="status"></p>
+              <div id="progressMilestones" class="milestones"></div>
+            </div>
+          </details>
+          <details id="insightsDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Insights</span
+              ><span class="disclosure-meta">Categories · days · routines</span>
+            </summary>
+            <div class="disclosure-body">
+              <section class="insight-section">
+                <h3>By category</h3>
+                <div id="categoryStats"></div>
+              </section>
+              <section class="insight-section">
+                <h3>Your strongest days</h3>
+                <div id="weekdayStats"></div>
+                <p class="chart-note">
+                  Rates use due routines with known schedules.
+                </p>
+              </section>
+              <section class="insight-section">
+                <h3>Routine insights</h3>
+                <p class="chart-note">
+                  Sorted by completion rate. Tap a routine for its streak and
+                  history.
+                </p>
+                <div id="routineStats"></div>
+              </section>
+            </div>
+          </details>
+
+          <section class="layout-card" id="routineDetail" hidden="">
+            <h3 id="routineDetailTitle"></h3>
+            <p id="routineDetailSummary"></p>
+            <div id="routineDetailHistory"></div>
+            <button type="button" id="closeRoutineDetail">Close details</button>
+          </section>
+          <details id="historyDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Completion history</span
+              ><span id="historyCompactLabel" class="disclosure-meta"
+                >Review a date</span
+              >
+            </summary>
+            <div class="disclosure-body">
+              <label class="history-date"
+                >Review date<input id="historyDate" type="date"
+              /></label>
+              <p id="historyNotice" class="chart-note"></p>
+              <div id="progressHistory"></div>
+              <p id="historyFeedback" role="status"></p>
+            </div>
+          </details>
+          <details id="exportsDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Export progress</span
+              ><span id="exportCompactLabel" class="disclosure-meta"
+                >CSV · Print</span
+              >
+            </summary>
+            <div class="disclosure-body">
+              <p class="chart-note">
+                Exports follow the selected dates and filters.
+              </p>
+              <div class="analytics-exports">
+                <button id="exportProgressCsv" type="button">
+                  Download CSV</button
+                ><button id="printProgress" type="button">Print report</button>
+              </div>
+            </div>
+          </details>
+          <details class="progress-rules">
+            <summary>How progress is calculated</summary>
+            <p id="progressTrackingNote"></p>
+            <p>
+              Completion rate = completed due routines ÷ all due routines.
+              Upcoming routines and skipped routines are excluded. An early
+              completion counts immediately.
+            </p>
+            <p>
+              A streak counts scheduled days with every non-skipped routine
+              completed. Rest days and fully skipped days are neutral. Today has
+              until midnight to extend a streak. Routine streaks use the same
+              rule for that routine. Streaks follow category and routine
+              filters, across all tracked dates.
+            </p>
+            <p>
+              Deleting a routine retains its history and stops scheduling it
+              from tomorrow. Schedule edits apply today onward. Old completions
+              without a known schedule contribute to totals, but not rates or
+              streaks. Corrections to past dates have no completion time.
+            </p>
+          </details>
         </section>
         <section
           aria-labelledby="settingsHeading"
@@ -459,151 +718,306 @@
           role="dialog"
           tabindex="-1"
         >
-          <!-- Small handle displayed at the top of the mobile sheet -->
-          <div aria-hidden="true" class="sheet-handle"></div>
-          <div class="section-heading form-sheet-heading">
+          <div
+            class="section-heading form-sheet-heading activity-editor-header"
+          >
             <div>
-              <p class="eyebrow">New activity</p>
-              <h2 id="routineFormHeading">Add routine</h2>
+              <p class="eyebrow">Plan your day</p>
+              <h2 id="routineFormHeading">New activity</h2>
+              <p class="activity-editor-subtitle">
+                Make time for what matters.
+              </p>
             </div>
-            <!-- Visible only when the form is a mobile bottom sheet -->
             <button
               aria-label="Close routine form"
               class="sheet-close-button"
               id="closeRoutineFormButton"
               type="button"
             >
-              <i aria-hidden="true" class="bi bi-x-lg"> </i>
+              <span class="editor-close-mark" aria-hidden="true"></span>
             </button>
           </div>
           <form id="routineForm">
-            <!-- Routine name -->
-            <div class="form-group">
-              <label for="title"> Activity name </label>
-              <input
-                id="title"
-                maxlength="100"
-                name="title"
-                placeholder="Example: Study Python"
-                required=""
-                type="text"
-              />
-            </div>
-            <!-- Routine start and end times -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="startTime"> Start time </label>
-                <input
-                  id="startTime"
-                  name="startTime"
-                  required=""
-                  type="time"
-                />
-              </div>
-              <div class="form-group">
-                <label for="endTime"> End time </label>
-                <input id="endTime" name="endTime" required="" type="time" />
-              </div>
-            </div>
-            <!-- Routine category and repeating weekdays -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="category"> Category </label>
-                <select id="category" name="category">
-                  <option value="Study">Study</option>
-                  <option value="Work">Work</option>
-                  <option value="Health">Health</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Meal">Meal</option>
-                  <option value="Sleep">Sleep</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <span class="form-label"> Select days </span>
-                <div class="weekday-grid">
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Monday" />
-                    Monday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Tuesday" />
-                    Tuesday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Wednesday" />
-                    Wednesday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Thursday" />
-                    Thursday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Friday" />
-                    Friday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Saturday" />
-                    Saturday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Sunday" />
-                    Sunday
-                  </label>
+            <div class="activity-editor-body">
+              <section class="activity-preview" aria-label="Activity preview">
+                <span
+                  id="activityPreviewIcon"
+                  class="activity-preview-icon"
+                  aria-hidden="true"
+                ></span>
+                <div class="activity-preview-copy">
+                  <span class="activity-preview-eyebrow">Your activity</span>
+                  <h3 id="activityPreviewTitle">Your next activity</h3>
+                  <p id="activityPreviewSchedule">
+                    Choose a time and repeat days
+                  </p>
+                  <span
+                    id="activityPreviewCategory"
+                    class="activity-category-tag"
+                    >Study</span
+                  >
                 </div>
-                <!-- Hidden until the user submits without selecting a day -->
-                <small class="text-danger d-none" id="dayError">
-                  Select at least one day.
-                </small>
-              </div>
+                <strong
+                  id="activityPreviewDuration"
+                  class="activity-duration-badge"
+                  >— min</strong
+                >
+              </section>
+              <section
+                id="activityQuickStart"
+                class="activity-quick-start"
+                aria-label="Quick start"
+              >
+                <p>Start with an idea</p>
+                <div class="activity-preset-row">
+                  <button type="button" data-activity-preset="study">
+                    Study session</button
+                  ><button type="button" data-activity-preset="walk">
+                    Go for a walk</button
+                  ><button type="button" data-activity-preset="read">
+                    Read a book
+                  </button>
+                </div>
+              </section>
+              <section
+                class="activity-form-section"
+                aria-labelledby="activityBasicsHeading"
+              >
+                <h3 id="activityBasicsHeading">
+                  <span aria-hidden="true">1</span> Activity
+                </h3>
+                <div class="activity-basics-grid">
+                  <div class="form-group">
+                    <label for="title"
+                      >Activity name
+                      <small id="activityTitleCount" aria-hidden="true"
+                        >0/100</small
+                      ></label
+                    ><input
+                      id="title"
+                      maxlength="100"
+                      name="title"
+                      placeholder="What would you like to do?"
+                      required
+                      type="text"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="category">Category</label
+                    ><select id="category" name="category">
+                      <option value="Study">Study</option>
+                      <option value="Work">Work</option>
+                      <option value="Health">Health</option>
+                      <option value="Personal">Personal</option>
+                      <option value="Meal">Meal</option>
+                      <option value="Sleep">Sleep</option>
+                    </select>
+                  </div>
+                </div>
+              </section>
+              <section
+                class="activity-form-section"
+                aria-labelledby="activityScheduleHeading"
+              >
+                <h3 id="activityScheduleHeading">
+                  <span aria-hidden="true">2</span> Time & duration
+                </h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="startTime">Start time</label
+                    ><input
+                      id="startTime"
+                      name="startTime"
+                      required
+                      type="time"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="endTime">End time</label
+                    ><input
+                      id="endTime"
+                      name="endTime"
+                      required
+                      type="time"
+                      aria-describedby="activityTimeHint"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="activity-duration-options"
+                  role="group"
+                  aria-label="Quick duration"
+                >
+                  <button type="button" data-activity-duration="15">
+                    15 min</button
+                  ><button type="button" data-activity-duration="25">
+                    25 min</button
+                  ><button type="button" data-activity-duration="30">
+                    30 min</button
+                  ><button type="button" data-activity-duration="60">
+                    1 hour
+                  </button>
+                </div>
+                <p
+                  id="activityTimeHint"
+                  class="activity-field-hint"
+                  role="status"
+                ></p>
+                <p
+                  id="activityConflictHint"
+                  class="activity-conflict-hint"
+                  role="status"
+                  hidden
+                ></p>
+              </section>
+              <section
+                class="activity-form-section"
+                aria-labelledby="activityRepeatHeading"
+              >
+                <h3 id="activityRepeatHeading">
+                  <span aria-hidden="true">3</span> Repeat
+                </h3>
+                <div
+                  class="activity-repeat-options"
+                  role="group"
+                  aria-label="Quick repeat schedule"
+                >
+                  <button type="button" data-activity-days="today">
+                    Today’s weekday</button
+                  ><button type="button" data-activity-days="weekdays">
+                    Weekdays</button
+                  ><button type="button" data-activity-days="weekend">
+                    Weekend</button
+                  ><button type="button" data-activity-days="everyday">
+                    Every day
+                  </button>
+                </div>
+                <fieldset class="activity-weekdays">
+                  <legend>Repeat on</legend>
+                  <div class="weekday-grid">
+                    <label class="weekday-option" title="Monday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Monday"
+                        aria-label="Monday"
+                      /><span>Mon</span></label
+                    >
+                    <label class="weekday-option" title="Tuesday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Tuesday"
+                        aria-label="Tuesday"
+                      /><span>Tue</span></label
+                    >
+                    <label class="weekday-option" title="Wednesday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Wednesday"
+                        aria-label="Wednesday"
+                      /><span>Wed</span></label
+                    >
+                    <label class="weekday-option" title="Thursday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Thursday"
+                        aria-label="Thursday"
+                      /><span>Thu</span></label
+                    >
+                    <label class="weekday-option" title="Friday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Friday"
+                        aria-label="Friday"
+                      /><span>Fri</span></label
+                    >
+                    <label class="weekday-option" title="Saturday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Saturday"
+                        aria-label="Saturday"
+                      /><span>Sat</span></label
+                    >
+                    <label class="weekday-option" title="Sunday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Sunday"
+                        aria-label="Sunday"
+                      /><span>Sun</span></label
+                    >
+                  </div>
+                </fieldset>
+                <small class="text-danger d-none" id="dayError" role="alert"
+                  >Select at least one day.</small
+                >
+                <p id="activityWeeklySummary" class="activity-field-hint"></p>
+              </section>
+              <details id="activityExtras" class="activity-extras">
+                <summary>
+                  <span>Notes & priority</span
+                  ><small id="activityExtrasSummary">Optional</small>
+                </summary>
+                <div class="activity-extras-body">
+                  <div class="form-group">
+                    <label for="notes"
+                      >Notes
+                      <small id="activityNotesCount" aria-hidden="true"
+                        >0/300</small
+                      ></label
+                    ><textarea
+                      class="form-control"
+                      id="notes"
+                      maxlength="300"
+                      name="notes"
+                      placeholder="Anything to remember?"
+                      rows="3"
+                    ></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="priority">Priority</label
+                    ><select class="form-select" id="priority" name="priority">
+                      <option value="Low">Low</option>
+                      <option selected value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
             </div>
-            <!-- ==================================================
-     ROUTINE DETAILS
-
-     Notes store extra information about the activity.
-     Priority shows how important the routine is.
-================================================== -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="notes"> Notes </label>
-                <textarea
-                  class="form-control"
-                  id="notes"
-                  maxlength="300"
-                  name="notes"
-                  placeholder="Example: Bring laptop and charger"
-                  rows="3"
-                ></textarea>
+            <footer class="activity-editor-footer">
+              <div class="form-actions">
+                <button class="primary-button" id="submitButton" type="submit">
+                  Create activity</button
+                ><button
+                  id="cancelNewActivity"
+                  class="activity-cancel"
+                  type="button"
+                >
+                  Cancel</button
+                ><button
+                  class="activity-cancel d-none"
+                  id="cancelEditButton"
+                  type="button"
+                >
+                  Cancel
+                </button>
               </div>
-              <div class="form-group">
-                <label for="priority"> Priority </label>
-                <select class="form-select" id="priority" name="priority">
-                  <option value="Low">Low</option>
-                  <option selected="" value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-            </div>
-            <!-- Add, update, and cancel controls -->
-            <div class="form-actions">
-              <button class="primary-button" id="submitButton" type="submit">
-                Add routine
-              </button>
               <button
-                class="btn btn-outline-secondary d-none"
-                id="cancelEditButton"
+                class="activity-delete"
+                hidden
+                id="deleteRoutineFromEditor"
                 type="button"
               >
-                Cancel edit
+                Delete routine
               </button>
-            </div>
-            <button
-              class="btn btn-outline-danger"
-              hidden=""
-              id="deleteRoutineFromEditor"
-              type="button"
-            >
-              Delete routine
-            </button>
+            </footer>
           </form>
         </section>
       </main>
@@ -654,6 +1068,7 @@
     <!-- Bootstrap JavaScript components -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Main application logic -->
+    <script src="js/progress-core.js"></script>
     <script src="js/app.js"></script>
     <script src="js/push-config.js"></script>
     <button
@@ -666,6 +1081,8 @@
       ＋
     </button>
     <script src="js/layout.js"></script>
+    <script src="js/activity-editor.js"></script>
+    <script src="js/progress.js"></script>
     <script src="js/notifications.js"></script>
   </body>
 </html>
