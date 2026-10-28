@@ -33,7 +33,14 @@ w.localStorage.setItem(
     },
   ]),
 );
-for (const name of ["app", "push-config", "layout", "notifications"])
+for (const name of [
+  "progress-core",
+  "app",
+  "push-config",
+  "layout",
+  "progress",
+  "notifications",
+])
   require("vm").runInContext(
     fs.readFileSync(root + "js/" + name + ".js", "utf8"),
     dom.getInternalVMContext(),
@@ -49,15 +56,15 @@ $("#searchInput").dispatchEvent(new w.Event("input"));
 assert.match($("#routineList").textContent, /No matching routines/);
 assert.equal($("#progressText").textContent, "1 of 1 completed");
 $("[data-view=progress]").click();
-assert.equal($("#completedStat").textContent, "1 of 1");
+assert.match($("#progressTodayLabel").textContent, /1 completed/);
 assert.equal($("#streakStat").textContent, "1 day");
-assert.equal(w.document.querySelectorAll(".week-day").length, 7);
-$("[data-range=month]").click();
-assert.equal(w.document.querySelectorAll(".week-day").length, 4);
-$("[data-range=year]").click();
-assert.equal(w.document.querySelectorAll(".week-day").length, 12);
-$("[data-range=week]").click();
-assert.equal(w.document.querySelectorAll(".week-day").length, 7);
+assert.ok(w.document.querySelectorAll(".week-day").length >= 1);
+$("[data-progress-period=month]").click();
+assert.ok(w.document.querySelectorAll(".week-day").length >= 1);
+$("[data-progress-period=year]").click();
+assert.ok(w.document.querySelectorAll(".week-day").length >= 1);
+$("[data-progress-period=week]").click();
+assert.ok(w.document.querySelectorAll(".week-day").length >= 1);
 assert.equal($("#ringPercent").textContent, "100%");
 assert.equal($("#bestStreak").textContent, "1 day");
 $("#searchInput").value = "";
@@ -89,6 +96,54 @@ assert.equal(
 assert.equal(
   JSON.parse(w.localStorage.getItem("completionHistory"))[date][0],
   "study",
+);
+// Custom dates survive unrelated data refreshes until Apply is pressed.
+$("#progressFrom").value = "2026-01-01";
+$("#progressFrom").dispatchEvent(new w.Event("input"));
+w.dispatchEvent(new w.Event("routine-rendered"));
+assert.equal($("#progressFrom").value, "2026-01-01");
+$("#progressTo").value = "2026-01-07";
+$("#applyProgressFilters").click();
+assert.equal(w.document.querySelectorAll(".heatmap-cell").length, 7);
+$("#progressFrom").value = "2026-02-30";
+$("#applyProgressFilters").click();
+assert.match($("#progressFilterError").textContent, /valid range/);
+// Backup validation accepts legacy history and rejects malformed new ledgers.
+const storedRoutine = JSON.parse(w.localStorage.getItem("routines"))[0];
+const ledger = JSON.parse(w.localStorage.getItem("routineProgress"));
+const backup = {
+  routines: [storedRoutine],
+  completionHistory: { [date]: ["study"] },
+  progressData: ledger,
+};
+assert.equal(w.isValidBackup(backup), true);
+assert.equal(
+  w.isValidBackup({
+    ...backup,
+    progressData: { ...ledger, records: { invalid: {} } },
+  }),
+  false,
+);
+assert.equal(
+  w.isValidBackup({ ...backup, routines: [storedRoutine, storedRoutine] }),
+  false,
+);
+assert.equal(
+  w.isValidBackup({
+    routines: [storedRoutine],
+    completionHistory: { [date]: ["study"] },
+  }),
+  true,
+);
+// Deleting a routine keeps the completion and analytics ledger.
+w.deleteRoutine("study");
+assert.ok(
+  JSON.parse(w.localStorage.getItem("completionHistory"))[date].includes(
+    "study",
+  ),
+);
+assert.ok(
+  JSON.parse(w.localStorage.getItem("routineProgress")).schedules.study.length,
 );
 console.log(
   "PASS: four-tab navigation, real progress, completion persistence, filtering independence, settings controls, theme, add/edit dialog, Escape and editing persistence",

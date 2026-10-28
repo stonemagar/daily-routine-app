@@ -28,6 +28,7 @@
     <!-- App icon displayed in the browser tab -->
     <link href="assets/icons/icon-192.png" rel="icon" type="image/png" />
     <link href="css/layout.css" rel="stylesheet" />
+    <link href="css/progress.css" rel="stylesheet" />
   </head>
   <body>
     <div class="app-shell">
@@ -208,67 +209,189 @@
           <div class="screen-title">
             <h2 id="progressHeading" tabindex="-1">Your progress</h2>
           </div>
-          <div aria-label="Progress period" class="range-tabs" role="group">
+          <p class="muted">Small steps, lasting habits.</p>
+          <div class="range-tabs" role="group" aria-label="Progress period">
+            <button type="button" data-progress-period="day">Day</button>
             <button
-              aria-pressed="true"
-              class="selected"
-              data-range="week"
               type="button"
+              data-progress-period="week"
+              class="selected"
+              aria-pressed="true"
             >
               Week
             </button>
-            <button aria-pressed="false" data-range="month" type="button">
-              Month
-            </button>
-            <button aria-pressed="false" data-range="year" type="button">
-              Year
-            </button>
+            <button type="button" data-progress-period="month">Month</button>
+            <button type="button" data-progress-period="year">Year</button>
           </div>
-          <section class="progress-summary">
+          <details class="analytics-filters">
+            <summary>Filter progress</summary>
+            <div class="analytics-filter-grid">
+              <label>From<input type="date" id="progressFrom" /></label>
+              <label>To<input type="date" id="progressTo" /></label>
+              <label
+                >Category<select id="progressCategory">
+                  <option>All</option>
+                </select></label
+              >
+              <label
+                >Routine<select id="progressRoutine">
+                  <option value="">All routines</option>
+                </select></label
+              >
+            </div>
+            <button type="button" id="applyProgressFilters">Apply dates</button>
+            <p id="progressFilterError" role="alert"></p>
+          </details>
+          <p class="muted" id="progressRangeLabel"></p>
+          <section class="progress-summary" aria-label="Completion summary">
             <div>
               <p>Completion rate</p>
-              <strong id="ratePercent"> 0% </strong>
-              <p id="progressTodayLabel">0 of 0 completed today</p>
+              <strong id="ratePercent">—</strong>
+              <p id="progressTodayLabel"></p>
             </div>
             <div class="completion-ring" id="completionRing">
-              <span id="ringPercent"> 0% </span>
+              <span id="ringPercent">—</span>
             </div>
           </section>
+          <p class="progress-comparison" id="progressComparison"></p>
+          <div class="analytics-counts" id="progressCounts"></div>
           <section class="weekly-card">
-            <h3 id="chartHeading">Weekly completion</h3>
+            <h3 id="chartHeading">Completions over time</h3>
             <div
-              aria-label="Completed routines"
-              class="week-bars"
               id="weekBars"
+              class="week-bars"
               role="list"
+              aria-label="Completions over time"
             ></div>
-            <p class="chart-note">Completed routines from saved history</p>
+            <p class="chart-note">
+              Bar height shows completed routines; select a day in the calendar
+              for details.
+            </p>
+          </section>
+          <section class="layout-card">
+            <div class="completed-heading">
+              <h3>Consistency calendar</h3>
+              <span id="heatmapLabel"></span>
+            </div>
+            <p class="chart-note">
+              Colour shows completion count. Tap a date to review it.
+            </p>
+            <div
+              id="progressHeatmap"
+              class="progress-heatmap"
+              aria-label="Completion calendar"
+            ></div>
+            <div class="heatmap-legend">
+              <span>Fewer</span><i></i><i></i><i></i><i></i><span>More</span>
+            </div>
           </section>
           <div class="streak-grid">
             <div class="streak-card">
-              <i aria-hidden="true" class="bi bi-flame"> </i>
               <div>
-                <strong id="streakStat"> 0 days </strong>
-                <small> Current streak </small>
+                <strong id="streakStat">0 days</strong
+                ><small>Current streak</small>
               </div>
             </div>
             <div class="streak-card">
-              <i aria-hidden="true" class="bi bi-trophy"> </i>
               <div>
-                <strong id="bestStreak"> 0 days </strong>
-                <small> Best streak </small>
+                <strong id="bestStreak">0 days</strong
+                ><small>Best streak</small>
               </div>
             </div>
           </div>
-          <section class="completed-section">
-            <div class="completed-heading">
-              <h3>Completed today</h3>
-              <span id="completedCount"> 0/0 </span>
+          <section class="layout-card">
+            <h3>Weekly goal</h3>
+            <p id="weeklyGoalLabel"></p>
+            <div
+              id="weeklyGoalProgress"
+              class="goal-track"
+              role="progressbar"
+              aria-label="Weekly completions"
+              aria-valuemin="0"
+              aria-valuemax="20"
+              aria-valuenow="0"
+            >
+              <span></span>
             </div>
-            <div id="completedList"></div>
+            <form id="weeklyGoalForm" class="goal-form">
+              <label for="weeklyGoalInput">Completions per week</label
+              ><input
+                id="weeklyGoalInput"
+                type="number"
+                min="1"
+                max="9999"
+                required
+              /><button type="submit">Save goal</button>
+            </form>
+            <p id="goalFeedback" role="status"></p>
+            <div id="progressMilestones" class="milestones"></div>
           </section>
-          <span hidden="" id="completedStat"> </span>
-          <span hidden="" id="completionStat"> </span>
+          <section class="layout-card">
+            <h3>By category</h3>
+            <div id="categoryStats"></div>
+          </section>
+          <section class="layout-card">
+            <h3>Your strongest days</h3>
+            <div id="weekdayStats"></div>
+            <p class="chart-note">
+              Rates use due routines with known schedules.
+            </p>
+          </section>
+          <section class="layout-card">
+            <h3>Routine insights</h3>
+            <p class="chart-note">
+              Sorted by completion rate. Tap a routine for its streak and
+              history.
+            </p>
+            <div id="routineStats"></div>
+          </section>
+          <section class="layout-card" id="routineDetail" hidden>
+            <h3 id="routineDetailTitle"></h3>
+            <p id="routineDetailSummary"></p>
+            <div id="routineDetailHistory"></div>
+            <button type="button" id="closeRoutineDetail">Close details</button>
+          </section>
+          <section class="layout-card">
+            <h3>Completion history</h3>
+            <label class="history-date"
+              >Review date<input id="historyDate" type="date"
+            /></label>
+            <p id="historyNotice" class="chart-note"></p>
+            <div id="progressHistory"></div>
+            <p id="historyFeedback" role="status"></p>
+          </section>
+          <section class="layout-card">
+            <h3>Export progress</h3>
+            <p class="chart-note">
+              Exports follow the selected dates and filters.
+            </p>
+            <div class="analytics-exports">
+              <button id="exportProgressCsv" type="button">Download CSV</button
+              ><button id="printProgress" type="button">Print report</button>
+            </div>
+          </section>
+          <details class="progress-rules">
+            <summary>How progress is calculated</summary>
+            <p id="progressTrackingNote"></p>
+            <p>
+              Completion rate = completed due routines ÷ all due routines.
+              Upcoming routines and skipped routines are excluded. An early
+              completion counts immediately.
+            </p>
+            <p>
+              A streak counts scheduled days with every non-skipped routine
+              completed. Rest days and fully skipped days are neutral. Today has
+              until midnight to extend a streak. Routine streaks use the same
+              rule for that routine. Streaks follow category and routine
+              filters, across all tracked dates.
+            </p>
+            <p>
+              Deleting a routine retains its history and stops scheduling it
+              from tomorrow. Schedule edits apply today onward. Old completions
+              without a known schedule contribute to totals, but not rates or
+              streaks. Corrections to past dates have no completion time.
+            </p>
+          </details>
         </section>
         <section
           aria-labelledby="settingsHeading"
@@ -654,6 +777,7 @@
     <!-- Bootstrap JavaScript components -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Main application logic -->
+    <script src="js/progress-core.js"></script>
     <script src="js/app.js"></script>
     <script src="js/push-config.js"></script>
     <button
@@ -666,6 +790,7 @@
       ＋
     </button>
     <script src="js/layout.js"></script>
+    <script src="js/progress.js"></script>
     <script src="js/notifications.js"></script>
   </body>
 </html>
