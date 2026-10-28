@@ -208,15 +208,20 @@
         >
           <div class="screen-title">
             <h2 id="progressHeading" tabindex="-1">Your progress</h2>
+            <button
+              id="toggleProgressDemo"
+              type="button"
+              aria-pressed="false"
+              aria-label="Explore demo progress"
+            >
+              Demo
+            </button>
           </div>
-          <p class="muted">Small steps, lasting habits.</p>
-          <button id="toggleProgressDemo" type="button" aria-pressed="false">
-            Explore demo progress
-          </button>
+
           <aside
             id="progressDemoBanner"
             class="progress-demo-banner"
-            hidden
+            hidden=""
             role="status"
           >
             <strong>Demo progress</strong>
@@ -264,40 +269,49 @@
               Next →
             </button>
           </div>
-          <p id="periodNavigationHint" class="chart-note" hidden>
+          <p id="periodNavigationHint" class="chart-note" hidden="">
             Choose Day, Week, Month or Year to use period navigation.
           </p>
-          <details class="analytics-filters">
-            <summary>Filter progress</summary>
-            <div class="analytics-filter-grid">
-              <label>From<input type="date" id="progressFrom" /></label>
-              <label>To<input type="date" id="progressTo" /></label>
-              <label
-                >Category<select id="progressCategory">
-                  <option>All</option>
-                </select></label
-              >
-              <label
-                >Routine<select id="progressRoutine">
-                  <option value="">All routines</option>
-                </select></label
-              >
-            </div>
-            <button type="button" id="applyProgressFilters">Apply dates</button>
-            <p id="progressFilterError" role="alert"></p>
-          </details>
-          <p class="muted" id="progressRangeLabel"></p>
+          <div class="progress-range-tools">
+            <p class="muted" id="progressRangeLabel"></p>
+            <details class="analytics-filters">
+              <summary>Filter progress</summary>
+              <div class="analytics-filter-grid">
+                <label>From<input type="date" id="progressFrom" /></label>
+                <label>To<input type="date" id="progressTo" /></label>
+                <label
+                  >Category<select id="progressCategory">
+                    <option>All</option>
+                  </select></label
+                >
+                <label
+                  >Routine<select id="progressRoutine">
+                    <option value="">All routines</option>
+                  </select></label
+                >
+              </div>
+              <button type="button" id="applyProgressFilters">
+                Apply dates
+              </button>
+              <p id="progressFilterError" role="alert"></p>
+            </details>
+          </div>
+
           <section class="progress-summary" aria-label="Completion summary">
             <div>
               <p>Completion rate</p>
               <strong id="ratePercent">—</strong>
               <p id="progressTodayLabel"></p>
+              <p
+                class="progress-comparison overview-comparison"
+                id="progressComparison"
+              ></p>
             </div>
             <div class="completion-ring" id="completionRing">
               <span id="ringPercent">—</span>
             </div>
           </section>
-          <p class="progress-comparison" id="progressComparison"></p>
+
           <div class="analytics-counts" id="progressCounts"></div>
           <section class="weekly-card">
             <h3 id="chartHeading" tabindex="-1">Completions over time</h3>
@@ -312,18 +326,32 @@
               class="analytics-chart-legend"
               aria-label="Chart legend"
             ></div>
-            <p id="chartRateEmpty" class="chart-note" hidden>
+            <p id="chartRateEmpty" class="chart-note" hidden="">
               No completion rates are available for this period yet.
             </p>
-            <p id="chartScrollHint" class="chart-note" hidden>
+            <p id="chartScrollHint" class="chart-note" hidden="">
               Swipe or scroll the chart horizontally to explore each date.
             </p>
             <p id="chartNote" class="chart-note"></p>
           </section>
+          <div class="streak-grid overview-streaks">
+            <div class="streak-card">
+              <div>
+                <strong id="streakStat">0 days</strong
+                ><small>Current streak</small>
+              </div>
+            </div>
+            <div class="streak-card">
+              <div>
+                <strong id="bestStreak">0 days</strong
+                ><small>Best streak</small>
+              </div>
+            </div>
+          </div>
           <section
             id="chartDrilldown"
             class="layout-card"
-            hidden
+            hidden=""
             aria-labelledby="chartDrilldownHeading"
           >
             <div class="completed-heading">
@@ -338,123 +366,145 @@
             </div>
             <p id="chartDrilldownSummary" class="chart-note"></p>
             <div id="chartDrilldownList"></div>
-            <button id="moreChartDetails" type="button" hidden>
+            <button id="moreChartDetails" type="button" hidden="">
               Show more
             </button>
           </section>
-          <section class="layout-card" aria-labelledby="periodCompletedHeading">
-            <div class="completed-heading">
-              <h3 id="periodCompletedHeading">Completed routines</h3>
-              <span id="periodCompletedCount"></span>
+          <details id="completedDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Completed routines</span
+              ><span id="periodCompletedCount" class="disclosure-meta"></span>
+            </summary>
+            <div class="disclosure-body">
+              <p id="periodCompletedDescription" class="chart-note"></p>
+              <div id="periodCompletedList"></div>
+              <button id="showMoreCompleted" type="button" hidden="">
+                Show more
+              </button>
             </div>
-            <p id="periodCompletedDescription" class="chart-note"></p>
-            <div id="periodCompletedList"></div>
-            <button id="showMoreCompleted" type="button" hidden>
-              Show more
-            </button>
-          </section>
-          <section class="layout-card">
-            <div class="completed-heading">
-              <h3>Consistency calendar</h3>
-              <span id="heatmapLabel"></span>
-            </div>
-            <p class="chart-note">
-              Colour shows completion count. Tap a date to review it.
-            </p>
-            <div
-              id="progressHeatmap"
-              class="progress-heatmap"
-              aria-label="Completion calendar"
-            ></div>
-            <div class="heatmap-legend">
-              <span>Fewer</span><i></i><i></i><i></i><i></i><span>More</span>
-            </div>
-          </section>
-          <div class="streak-grid">
-            <div class="streak-card">
-              <div>
-                <strong id="streakStat">0 days</strong
-                ><small>Current streak</small>
+          </details>
+          <details id="calendarDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Consistency calendar</span
+              ><span id="heatmapLabel" class="disclosure-meta"></span>
+            </summary>
+            <div class="disclosure-body">
+              <p class="chart-note">
+                Colour shows completion count. Tap a date to review it.
+              </p>
+              <div
+                id="progressHeatmap"
+                class="progress-heatmap"
+                aria-label="Completion calendar"
+              ></div>
+              <div class="heatmap-legend">
+                <span>Fewer</span><i></i><i></i><i></i><i></i><span>More</span>
               </div>
             </div>
-            <div class="streak-card">
-              <div>
-                <strong id="bestStreak">0 days</strong
-                ><small>Best streak</small>
+          </details>
+
+          <details id="goalsDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Goals &amp; milestones</span
+              ><span id="goalCompactLabel" class="disclosure-meta"
+                >This week</span
+              >
+            </summary>
+            <div class="disclosure-body">
+              <p id="weeklyGoalLabel"></p>
+              <div
+                id="weeklyGoalProgress"
+                class="goal-track"
+                role="progressbar"
+                aria-label="Weekly completions"
+                aria-valuemin="0"
+                aria-valuemax="20"
+                aria-valuenow="0"
+              >
+                <span></span>
               </div>
+              <form id="weeklyGoalForm" class="goal-form">
+                <label for="weeklyGoalInput">Completions per week</label
+                ><input
+                  id="weeklyGoalInput"
+                  type="number"
+                  min="1"
+                  max="9999"
+                  required=""
+                /><button type="submit">Save goal</button>
+              </form>
+              <p id="goalFeedback" role="status"></p>
+              <div id="progressMilestones" class="milestones"></div>
             </div>
-          </div>
-          <section class="layout-card">
-            <h3>Weekly goal</h3>
-            <p id="weeklyGoalLabel"></p>
-            <div
-              id="weeklyGoalProgress"
-              class="goal-track"
-              role="progressbar"
-              aria-label="Weekly completions"
-              aria-valuemin="0"
-              aria-valuemax="20"
-              aria-valuenow="0"
-            >
-              <span></span>
+          </details>
+          <details id="insightsDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Insights</span
+              ><span class="disclosure-meta">Categories · days · routines</span>
+            </summary>
+            <div class="disclosure-body">
+              <section class="insight-section">
+                <h3>By category</h3>
+                <div id="categoryStats"></div>
+              </section>
+              <section class="insight-section">
+                <h3>Your strongest days</h3>
+                <div id="weekdayStats"></div>
+                <p class="chart-note">
+                  Rates use due routines with known schedules.
+                </p>
+              </section>
+              <section class="insight-section">
+                <h3>Routine insights</h3>
+                <p class="chart-note">
+                  Sorted by completion rate. Tap a routine for its streak and
+                  history.
+                </p>
+                <div id="routineStats"></div>
+              </section>
             </div>
-            <form id="weeklyGoalForm" class="goal-form">
-              <label for="weeklyGoalInput">Completions per week</label
-              ><input
-                id="weeklyGoalInput"
-                type="number"
-                min="1"
-                max="9999"
-                required
-              /><button type="submit">Save goal</button>
-            </form>
-            <p id="goalFeedback" role="status"></p>
-            <div id="progressMilestones" class="milestones"></div>
-          </section>
-          <section class="layout-card">
-            <h3>By category</h3>
-            <div id="categoryStats"></div>
-          </section>
-          <section class="layout-card">
-            <h3>Your strongest days</h3>
-            <div id="weekdayStats"></div>
-            <p class="chart-note">
-              Rates use due routines with known schedules.
-            </p>
-          </section>
-          <section class="layout-card">
-            <h3>Routine insights</h3>
-            <p class="chart-note">
-              Sorted by completion rate. Tap a routine for its streak and
-              history.
-            </p>
-            <div id="routineStats"></div>
-          </section>
-          <section class="layout-card" id="routineDetail" hidden>
+          </details>
+
+          <section class="layout-card" id="routineDetail" hidden="">
             <h3 id="routineDetailTitle"></h3>
             <p id="routineDetailSummary"></p>
             <div id="routineDetailHistory"></div>
             <button type="button" id="closeRoutineDetail">Close details</button>
           </section>
-          <section class="layout-card">
-            <h3>Completion history</h3>
-            <label class="history-date"
-              >Review date<input id="historyDate" type="date"
-            /></label>
-            <p id="historyNotice" class="chart-note"></p>
-            <div id="progressHistory"></div>
-            <p id="historyFeedback" role="status"></p>
-          </section>
-          <section class="layout-card">
-            <h3>Export progress</h3>
-            <p class="chart-note">
-              Exports follow the selected dates and filters.
-            </p>
-            <div class="analytics-exports">
-              <button id="exportProgressCsv" type="button">Download CSV</button
-              ><button id="printProgress" type="button">Print report</button>
+          <details id="historyDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Completion history</span
+              ><span id="historyCompactLabel" class="disclosure-meta"
+                >Review a date</span
+              >
+            </summary>
+            <div class="disclosure-body">
+              <label class="history-date"
+                >Review date<input id="historyDate" type="date"
+              /></label>
+              <p id="historyNotice" class="chart-note"></p>
+              <div id="progressHistory"></div>
+              <p id="historyFeedback" role="status"></p>
             </div>
-          </section>
+          </details>
+          <details id="exportsDetails" class="progress-disclosure">
+            <summary>
+              <span class="disclosure-title">Export progress</span
+              ><span id="exportCompactLabel" class="disclosure-meta"
+                >CSV · Print</span
+              >
+            </summary>
+            <div class="disclosure-body">
+              <p class="chart-note">
+                Exports follow the selected dates and filters.
+              </p>
+              <div class="analytics-exports">
+                <button id="exportProgressCsv" type="button">
+                  Download CSV</button
+                ><button id="printProgress" type="button">Print report</button>
+              </div>
+            </div>
+          </details>
           <details class="progress-rules">
             <summary>How progress is calculated</summary>
             <p id="progressTrackingNote"></p>

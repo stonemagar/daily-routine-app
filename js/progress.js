@@ -77,6 +77,28 @@
     row.append(copy, node("span", value));
     return row;
   }
+  const compactDate = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+  function compactRange(start, end) {
+    if (start === end) return readable(end);
+    return (
+      (start.slice(0, 4) === end.slice(0, 4)
+        ? compactDate.format(new Date(start + "T12:00:00"))
+        : readable(start)) +
+      " – " +
+      readable(end)
+    );
+  }
+  function showHistoryDate(date) {
+    $("historyDetails").open = true;
+    $("historyDate").value = date;
+    renderHistory();
+    heatmap();
+    $("historyDate").scrollIntoView({ behavior: "smooth", block: "center" });
+    $("historyDate").focus({ preventScroll: true });
+  }
   function renderChart(rs) {
     const series = C.chartSeries(period, selected.start, selected.end, rs);
     const { mode, groups, metric } = series;
@@ -395,16 +417,7 @@
         "aria-label",
         "Review " + r.routine.title + " on " + r.date,
       );
-      review.onclick = () => {
-        $("historyDate").value = r.date;
-        renderHistory();
-        heatmap();
-        $("historyDate").scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        $("historyDate").focus({ preventScroll: true });
-      };
+      review.onclick = () => showHistoryDate(r.date);
       row.append(review);
       $("chartDrilldownList").append(row);
     });
@@ -471,15 +484,7 @@
       );
       b.setAttribute("aria-pressed", String($("historyDate").value === d));
       b.title = b.getAttribute("aria-label");
-      b.onclick = () => {
-        $("historyDate").value = d;
-        renderHistory();
-        heatmap();
-        $("historyDate").scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      };
+      b.onclick = () => showHistoryDate(d);
       $("progressHeatmap").append(b);
     });
   }
@@ -536,6 +541,9 @@
   function renderHistory() {
     const d = $("historyDate").value,
       area = $("progressHistory");
+    $("historyCompactLabel").textContent = C.validDate(d)
+      ? readable(d)
+      : "Review a date";
     area.replaceChildren();
     if (!C.validDate(d) || d > getTodayKey()) {
       $("historyNotice").textContent = "Choose today or an earlier date.";
@@ -656,7 +664,11 @@
     $("toggleProgressDemo").hidden = Boolean(demoData);
     $("toggleProgressDemo").textContent = demoData
       ? "Return to my progress"
-      : "Explore demo progress";
+      : "Demo";
+    $("toggleProgressDemo").setAttribute(
+      "aria-label",
+      demoData ? "Return to my progress" : "Explore demo progress",
+    );
     $("toggleProgressDemo").setAttribute(
       "aria-pressed",
       String(Boolean(demoData)),
@@ -689,10 +701,7 @@
       st = C.streaks(data(), new Date(), filters());
     renderNavigation();
     $("progressRangeLabel").textContent =
-      (demoData ? "Demo · " : "") +
-      readable(selected.start) +
-      " – " +
-      readable(selected.end);
+      (demoData ? "Demo · " : "") + compactRange(selected.start, selected.end);
     $("ratePercent").textContent = $("ringPercent").textContent = rate(s.rate);
     $("completionRing").style.setProperty("--completion", (s.rate || 0) + "%");
     $("progressTodayLabel").textContent =
@@ -720,8 +729,12 @@
       prev = C.summary(allRows(prevStart, prevEnd));
     $("progressComparison").textContent =
       s.rate === null || prev.rate === null
-        ? "A rate comparison will appear when both periods have known schedules."
-        : `${s.rate - prev.rate >= 0 ? "+" : ""}${s.rate - prev.rate} percentage points vs the previous ${length} day${length === 1 ? "" : "s"} (${readable(prevStart)} – ${readable(prevEnd)}).`;
+        ? "More history is needed for a comparison."
+        : s.rate === prev.rate
+          ? "Same rate as the previous period"
+          : `${s.rate - prev.rate >= 0 ? "+" : ""}${s.rate - prev.rate} percentage points vs previous period`;
+    $("progressComparison").title =
+      "Compared with " + readable(prevStart) + " – " + readable(prevEnd);
     $("streakStat").textContent =
       st.current + " " + (st.current === 1 ? "day" : "days");
     $("bestStreak").textContent =
@@ -734,6 +747,7 @@
     const week = C.range("week", getTodayKey()),
       weekly = C.summary(allRows(week.start, week.end, {})).completed,
       goal = data().goals.weekly;
+    $("goalCompactLabel").textContent = `${weekly}/${goal} this week`;
     $("weeklyGoalLabel").textContent =
       `${weekly} of ${goal} completions this calendar week · all routines`;
     $("weeklyGoalProgress").setAttribute("aria-valuemax", goal);

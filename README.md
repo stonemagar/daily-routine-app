@@ -19,3 +19,6 @@ Explore demo progress creates fictional data in memory only. The banner and head
 
 
 The main chart adapts to the selected period: Day shows four status counts, Week shows stacked daily status bars, Month shows a daily completion-rate line, and Year shows monthly completion-rate bars. Rate gaps are deliberately left blank when no eligible schedule is known; a known 0% remains a real zero. Monthly rates aggregate eligible occurrences rather than averaging daily percentages. Legends, axis units, keyboard-operable chart targets and paginated details are included. Dense date charts scroll within their card on small screens. Custom ranges select a suitable chart based on their length.
+
+
+The compact overview keeps period navigation, date/filter controls, completion rate, four status counts and the analytical chart at the top. Streak summaries follow the chart. Completed routines, the consistency calendar, goals/milestones, insights, completion history and exports use native expandable sections with summary counts. They start collapsed, retain their open state during updates, and remain keyboard-accessible. Chart review links and heatmap dates automatically open the history section and focus the selected date.

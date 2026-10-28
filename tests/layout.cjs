@@ -97,6 +97,25 @@ assert.equal(
   JSON.parse(w.localStorage.getItem("completionHistory"))[date][0],
   "study",
 );
+// The compact overview keeps detailed reports collapsed and opens history on demand.
+$("[data-view=progress]").click();
+assert.equal(w.document.querySelectorAll(".progress-disclosure").length, 6);
+assert.ok(
+  [...w.document.querySelectorAll(".progress-disclosure")].every(
+    (n) => !n.open,
+  ),
+);
+assert.ok($(".progress-summary").contains($("#progressComparison")));
+$("#completedDetails").open = true;
+$("[data-progress-period=month]").click();
+assert.equal($("#completedDetails").open, true);
+$("#completedDetails").open = false;
+$("#calendarDetails").open = true;
+$(".heatmap-cell").click();
+assert.equal($("#historyDetails").open, true);
+assert.equal(w.document.activeElement, $("#historyDate"));
+$("#historyDetails").open = false;
+$("#calendarDetails").open = false;
 // Custom dates survive unrelated data refreshes until Apply is pressed.
 $("#progressFrom").value = "2026-01-01";
 $("#progressFrom").dispatchEvent(new w.Event("input"));
