@@ -307,10 +307,18 @@
               role="list"
               aria-label="Completions over time"
             ></div>
-            <p class="chart-note">
-              Tap a bar to review the completed, missed, skipped and upcoming
-              routines in that period.
+            <div
+              id="chartLegend"
+              class="analytics-chart-legend"
+              aria-label="Chart legend"
+            ></div>
+            <p id="chartRateEmpty" class="chart-note" hidden>
+              No completion rates are available for this period yet.
             </p>
+            <p id="chartScrollHint" class="chart-note" hidden>
+              Swipe or scroll the chart horizontally to explore each date.
+            </p>
+            <p id="chartNote" class="chart-note"></p>
           </section>
           <section
             id="chartDrilldown"

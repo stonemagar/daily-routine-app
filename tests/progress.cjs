@@ -137,3 +137,50 @@ assert.ok(
 console.log(
   "PASS full-period navigation, leap-year boundaries and isolated fictional demo ledger",
 );
+// Analytical charts use weighted rates; rest/skipped/unknown days are gaps, not zero.
+const sampleRows = [
+  { date: "2026-10-26", status: "completed", eligible: true, known: true },
+  { date: "2026-10-27", status: "skipped", eligible: false, known: true },
+  { date: "2026-10-28", status: "missed", eligible: true, known: true },
+  { date: "2026-10-28", status: "completed", eligible: false, known: false },
+  { date: "2026-10-28", status: "pending", eligible: false, known: true },
+];
+const line = C.chartSeries("month", "2026-10-26", "2026-10-28", sampleRows);
+assert.equal(line.metric, "rate");
+assert.deepEqual(
+  line.groups.map((g) => g.value),
+  [100, null, 0],
+);
+const yearly = C.chartSeries("year", "2026-10-26", "2026-11-01", sampleRows);
+assert.deepEqual(
+  yearly.groups.map((g) => g.value),
+  [50, null],
+);
+const weekly = C.chartSeries("week", "2026-10-26", "2026-10-28", sampleRows);
+assert.equal(weekly.metric, "count");
+assert.deepEqual(
+  weekly.groups.map((g) => g.value),
+  [1, 1, 3],
+);
+const daily = C.chartSeries(
+  "day",
+  "2026-10-28",
+  "2026-10-28",
+  sampleRows.filter((r) => r.date === "2026-10-28"),
+);
+assert.deepEqual(
+  daily.groups.map((g) => g.value),
+  [1, 1, 0, 1],
+);
+assert.equal(
+  C.chartSeries("custom", "2026-10-01", "2026-10-28", []).mode,
+  "month",
+);
+assert.ok(
+  C.chartSeries("month", "2026-10-01", "2026-10-28", []).groups.every(
+    (g) => g.value === null,
+  ),
+);
+console.log(
+  "PASS analytical chart series: stacked status counts, weighted rates, zero rates, unknown and skipped-day gaps",
+);

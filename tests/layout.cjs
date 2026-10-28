@@ -177,7 +177,9 @@ assert.equal($("#nextProgressPeriod").disabled, false);
 $("#nextProgressPeriod").click();
 assert.equal($("#progressFrom").value, date.slice(0, 7) + "-01");
 $("[data-progress-period=week]").click();
-$(".chart-bar-button").click();
+$(".chart-bar-button").dispatchEvent(
+  new w.MouseEvent("click", { bubbles: true }),
+);
 assert.equal($("#chartDrilldown").hidden, false);
 assert.match($("#chartDrilldownSummary").textContent, /completed/);
 assert.ok(
@@ -200,7 +202,9 @@ assert.equal($("#printProgress").disabled, true);
 $("#weeklyGoalInput").value = "999";
 $("#weeklyGoalForm").dispatchEvent(new w.Event("submit", { cancelable: true }));
 $("#previousProgressPeriod").click();
-$(".chart-bar-button").click();
+$(".chart-bar-button").dispatchEvent(
+  new w.MouseEvent("click", { bubbles: true }),
+);
 assert.equal($("#chartDrilldown").hidden, false);
 assert.equal(JSON.stringify(Object.entries(w.localStorage).sort()), beforeDemo);
 $("#exitProgressDemo").click();
@@ -213,6 +217,53 @@ $("#toggleProgressDemo").click();
 $("[data-view=today]").click();
 assert.equal($("#progressDemoBanner").hidden, true);
 assert.equal(JSON.stringify(Object.entries(w.localStorage).sort()), beforeDemo);
+// Each period uses its analytical presentation, with accessible SVG targets.
+for (const mode of ["day", "week", "month", "year"]) {
+  $("[data-progress-period=" + mode + "]").click();
+  assert.equal($("#weekBars").dataset.chartMode, mode);
+  assert.ok(
+    w.document.querySelectorAll(
+      ".analytics-chart-target[role=button][tabindex='0']",
+    ).length > 0,
+  );
+  if (mode === "day") {
+    $(".analytics-chart-target").dispatchEvent(
+      new w.KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    assert.match($("#chartDrilldownHeading").textContent, /Completed/);
+    assert.ok(
+      [
+        ...w.document.querySelectorAll("#chartDrilldownList [data-status]"),
+      ].every((n) => n.dataset.status === "completed"),
+    );
+  }
+  if (mode === "month") assert.ok($(".analytics-rate-line"));
+  if (mode === "year")
+    assert.match($("#chartHeading").textContent, /Monthly completion rate/);
+}
+// Explicit skipped day breaks the line: it is neither 0% nor a connecting segment.
+require("vm").runInContext(
+  `
+  progressData.schedules.study = [{from:"2026-10-26",routine:{id:"study",title:"Study JavaScript",category:"Study",startTime:"10:00",endTime:"11:00",days:["Monday","Tuesday","Wednesday"]}}];
+  progressData.records["2026-10-26"] = {study:{status:"completed",completedAt:null}};
+  progressData.records["2026-10-27"] = {study:{status:"skipped",completedAt:null}};
+  progressData.records["2026-10-28"] = {study:{status:"pending",completedAt:null}};
+`,
+  dom.getInternalVMContext(),
+);
+$("#progressFrom").value = "2026-10-26";
+$("#progressTo").value = "2026-10-28";
+$("#applyProgressFilters").click();
+// Custom 3-day ranges use counts. Choose Month for a rate line containing the gap.
+$("[data-progress-period=month]").click();
+const skippedPoint = $(".analytics-chart-target[data-chart-group='26']");
+assert.equal(skippedPoint.dataset.value, "");
+assert.match(skippedPoint.getAttribute("aria-label"), /rate unavailable/);
+assert.ok(!skippedPoint.querySelector(".analytics-rate-point"));
 // Backup validation accepts legacy history and rejects malformed new ledgers.
 const storedRoutine = JSON.parse(w.localStorage.getItem("routines"))[0];
 const ledger = JSON.parse(w.localStorage.getItem("routineProgress"));

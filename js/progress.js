@@ -78,52 +78,227 @@
     return row;
   }
   function renderChart(rs) {
-    const ds = C.dates(selected.start, selected.end),
-      groups = [];
-    for (const d of ds) {
-      const key =
-        ds.length <= 7
-          ? d
-          : ds.length <= 31
-            ? C.shift(selected.start, Math.floor(ds.indexOf(d) / 7) * 7)
-            : d.slice(0, 7);
-      let g = groups.at(-1);
-      if (!g || g.key !== key) {
-        g = { key, dates: [], count: 0 };
-        groups.push(g);
-      }
-      g.dates.push(d);
-    }
-    for (const g of groups)
-      g.count = rs.filter(
-        (r) => g.dates.includes(r.date) && r.status === "completed",
-      ).length;
-    const max = Math.max(1, ...groups.map((g) => g.count));
-    $("weekBars").replaceChildren();
-    groups.forEach((g) => {
-      const col = node("div", undefined, "week-day");
-      col.setAttribute("role", "listitem");
-      const label =
-        g.dates.length === 1
-          ? readable(g.key)
-          : readable(g.dates[0]) + " – " + readable(g.dates.at(-1));
-      col.setAttribute("aria-label", label + ": " + g.count + " completed");
-      col.title = label + ": " + g.count + " completed";
-      const track = node("div", undefined, "bar-track"),
-        bar = node("div", undefined, "bar-fill");
-      bar.style.height = (100 * g.count) / max + "%";
-      track.append(bar);
-      const button = node("button", undefined, "chart-bar-button");
-      button.type = "button";
-      button.setAttribute(
-        "aria-label",
-        "View " + label + ": " + g.count + " completed",
+    const series = C.chartSeries(period, selected.start, selected.end, rs);
+    const { mode, groups, metric } = series;
+    const heading = {
+      day: "Daily routine status",
+      week: "Daily completion breakdown",
+      month: "Daily completion rate",
+      year: "Monthly completion rate",
+    }[mode];
+    $("chartHeading").textContent = heading;
+    $("weekBars").classList.add("analytics-chart");
+    $("weekBars").setAttribute("role", "group");
+    $("weekBars").setAttribute("aria-label", heading);
+    $("weekBars").dataset.chartMode = mode;
+    const svgNode = (tag, attrs = {}) => {
+      const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+      return n;
+    };
+    const width =
+      mode === "month"
+        ? Math.max(280, groups.length * 28 + 46)
+        : mode === "year"
+          ? Math.max(280, groups.length * 30 + 46)
+          : 300;
+    const top = 36,
+      bottom = 180,
+      left = 38,
+      right = width - 12,
+      plotHeight = bottom - top;
+    const step = (right - left) / Math.max(groups.length, 1),
+      center = (i) => left + (i + 0.5) * step;
+    const max =
+      metric === "rate"
+        ? 100
+        : Math.max(
+            2,
+            Math.ceil(Math.max(0, ...groups.map((g) => g.value || 0)) / 2) * 2,
+          );
+    const y = (value) => bottom - (value / max) * plotHeight;
+    const svg = svgNode("svg", {
+      viewBox: `0 0 ${width} 216`,
+      width,
+      height: 216,
+      role: "group",
+      "aria-label": heading,
+    });
+    svg.style.width = width > 300 ? width + "px" : "100%";
+    const title = svgNode("title");
+    title.textContent = heading;
+    svg.append(title);
+    const axes = svgNode("g", { "aria-hidden": "true" });
+    (metric === "rate" ? [0, 25, 50, 75, 100] : [0, max / 2, max]).forEach(
+      (tick) => {
+        axes.append(
+          svgNode("line", {
+            x1: left,
+            y1: y(tick),
+            x2: right,
+            y2: y(tick),
+            class: "analytics-grid-line",
+          }),
+        );
+        const text = svgNode("text", {
+          x: left - 7,
+          y: y(tick) + 4,
+          "text-anchor": "end",
+          class: "analytics-axis-label",
+        });
+        text.textContent = tick + (metric === "rate" ? "%" : "");
+        axes.append(text);
+      },
+    );
+    const unit = svgNode("text", {
+      x: left,
+      y: 12,
+      class: "analytics-axis-label",
+    });
+    unit.textContent = metric === "rate" ? "Completion rate" : "Routine count";
+    axes.append(unit);
+    svg.append(axes);
+    if (mode === "month") {
+      let path = "",
+        connected = false;
+      groups.forEach((g, i) => {
+        if (g.value === null) {
+          connected = false;
+          return;
+        }
+        path += (connected ? " L " : " M ") + center(i) + " " + y(g.value);
+        connected = true;
+      });
+      svg.append(
+        svgNode("path", {
+          d: path,
+          fill: "none",
+          class: "analytics-rate-line",
+          "aria-hidden": "true",
+        }),
       );
-      button.title = "View routines for " + label;
-      button.onclick = () => {
+    }
+    groups.forEach((g, i) => {
+      const x = center(i),
+        barWidth = Math.min(42, step * 0.65),
+        s = g.summary;
+      const dateLabel =
+        readable(g.start) + (g.end === g.start ? "" : " – " + readable(g.end));
+      const summary = `${s.completed} completed, ${s.missed} missed, ${s.skipped} skipped, ${s.pending} upcoming`;
+      const label =
+        mode === "day"
+          ? `${g.label}: ${g.value} routines, ${dateLabel}`
+          : `${dateLabel}: ${metric === "rate" ? (g.value === null ? "rate unavailable" : g.value + "% completion") + ", " : ""}${summary}`;
+      const target = svgNode("g", {
+        class: "week-day chart-bar-button analytics-chart-target",
+        role: "button",
+        tabindex: 0,
+        "aria-label": "View " + label,
+        "data-chart-group": i,
+        "data-value": g.value === null ? "" : g.value,
+      });
+      const hit = svgNode("rect", {
+        x: x - step / 2 + 1,
+        y: top - 8,
+        width: Math.max(1, step - 2),
+        height: bottom - top + 38,
+        rx: 5,
+        class: "analytics-chart-hit",
+      });
+      target.append(hit);
+      if (mode === "week") {
+        let base = bottom;
+        for (const [status, key] of [
+          ["completed", "completed"],
+          ["missed", "missed"],
+          ["skipped", "skipped"],
+          ["pending", "pending"],
+        ]) {
+          const h = (s[key] / max) * plotHeight;
+          if (h) {
+            target.append(
+              svgNode("rect", {
+                x: x - barWidth / 2,
+                y: base - h,
+                width: barWidth,
+                height: h,
+                class: "analytics-status-" + status,
+                "data-status": status,
+              }),
+            );
+            base -= h;
+          }
+        }
+      } else if (mode === "day") {
+        if (g.value)
+          target.append(
+            svgNode("rect", {
+              x: x - barWidth / 2,
+              y: y(g.value),
+              width: barWidth,
+              height: bottom - y(g.value),
+              rx: 4,
+              class: "analytics-status-" + g.status,
+            }),
+          );
+      } else if (mode === "year" && g.value !== null) {
+        if (g.value)
+          target.append(
+            svgNode("rect", {
+              x: x - barWidth / 2,
+              y: y(g.value),
+              width: barWidth,
+              height: bottom - y(g.value),
+              rx: 4,
+              class: "analytics-rate-bar",
+            }),
+          );
+        else
+          target.append(
+            svgNode("line", {
+              x1: x - barWidth / 2,
+              y1: bottom,
+              x2: x + barWidth / 2,
+              y2: bottom,
+              class: "analytics-zero-rate",
+            }),
+          );
+      } else if (mode === "month" && g.value !== null)
+        target.append(
+          svgNode("circle", {
+            cx: x,
+            cy: y(g.value),
+            r: 4.5,
+            class: "analytics-rate-point",
+          }),
+        );
+      if (mode !== "month" || g.value === null) {
+        const value = svgNode("text", {
+          x,
+          y: g.value === null ? bottom - 8 : Math.max(29, y(g.value) - 7),
+          "text-anchor": "middle",
+          class: "analytics-value-label",
+        });
+        value.textContent =
+          g.value === null ? "—" : g.value + (metric === "rate" ? "%" : "");
+        target.append(value);
+      }
+      const axis = svgNode("text", {
+        x,
+        y: 202,
+        "text-anchor": "middle",
+        class: "analytics-axis-label",
+      });
+      axis.textContent = g.label;
+      target.append(axis);
+      const tooltip = svgNode("title");
+      tooltip.textContent = label;
+      target.append(tooltip);
+      const activate = () => {
         chartSelection = {
-          start: g.dates[0],
-          end: g.dates.at(-1),
+          start: g.start,
+          end: g.end,
+          status: g.status,
           signature: reportSignature(),
         };
         chartLimit = 20;
@@ -134,20 +309,43 @@
         });
         $("chartDrilldownHeading").focus({ preventScroll: true });
       };
-      button.append(
-        track,
-        node(
-          "span",
-          ds.length > 31
-            ? new Date(g.key + "-01T12:00:00").toLocaleDateString("en-GB", {
-                month: "narrow",
-              })
-            : String(new Date(g.dates[0] + "T12:00:00").getDate()),
-        ),
-      );
-      col.append(button);
-      $("weekBars").append(col);
+      target.addEventListener("click", activate);
+      target.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activate();
+        }
+      });
+      svg.append(target);
     });
+    const scroller = node("div", undefined, "analytics-chart-scroll");
+    scroller.append(svg);
+    $("weekBars").replaceChildren(scroller);
+    $("chartLegend").replaceChildren();
+    const entries =
+      metric === "count"
+        ? [
+            ["completed", "Completed"],
+            ["missed", "Missed"],
+            ["skipped", "Skipped"],
+            ["pending", "Upcoming"],
+          ]
+        : [
+            ["rate", "Completion rate"],
+            ["unknown", "— Rate unavailable"],
+          ];
+    entries.forEach(([status, label]) => {
+      const item = node("span", label);
+      item.dataset.series = status;
+      $("chartLegend").append(item);
+    });
+    $("chartNote").textContent =
+      metric === "count"
+        ? "Counts include saved completions. Tap a bar to review its routines. Skipped routines are shown separately."
+        : "Rates exclude skipped and upcoming routines. Gaps mean no eligible routines or an unknown historical schedule. Tap a point or bar for details.";
+    $("chartScrollHint").hidden = width <= 300;
+    $("chartRateEmpty").hidden =
+      metric !== "rate" || groups.some((g) => g.value !== null);
   }
   let chartSelection = null,
     chartLimit = 20;
@@ -159,7 +357,12 @@
     if (!chartSelection) return;
     const rows = rs
       .filter(
-        (r) => r.date >= chartSelection.start && r.date <= chartSelection.end,
+        (r) =>
+          r.date >= chartSelection.start &&
+          r.date <= chartSelection.end &&
+          (!chartSelection.status ||
+            (r.status === chartSelection.status &&
+              (r.status !== "pending" || r.known))),
       )
       .sort(
         (a, b) =>
@@ -168,6 +371,14 @@
       );
     const summary = C.summary(rows);
     $("chartDrilldownHeading").textContent =
+      (chartSelection.status
+        ? {
+            completed: "Completed",
+            missed: "Missed",
+            skipped: "Skipped",
+            pending: "Upcoming",
+          }[chartSelection.status] + " · "
+        : "") +
       readable(chartSelection.start) +
       (chartSelection.end === chartSelection.start
         ? ""

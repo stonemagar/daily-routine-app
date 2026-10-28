@@ -290,6 +290,69 @@
     const day = new Date(end + "T12:00:00").getDay();
     return { start: shift(end, -((day + 6) % 7)), end };
   }
+  // Chart values share the same denominator rules as report summaries.
+  function chartSeries(period, start, end, rs) {
+    const ds = dates(start, end);
+    const mode =
+      period === "custom"
+        ? ds.length === 1
+          ? "day"
+          : ds.length <= 7
+            ? "week"
+            : ds.length <= 62
+              ? "month"
+              : "year"
+        : period;
+    const groups = [];
+    if (mode === "day") {
+      const s = summary(rs);
+      for (const [status, label, key] of [
+        ["completed", "Completed", "completed"],
+        ["missed", "Missed", "missed"],
+        ["skipped", "Skipped", "skipped"],
+        ["pending", "Upcoming", "pending"],
+      ])
+        groups.push({ start, end, label, status, summary: s, value: s[key] });
+    } else {
+      for (const date of ds) {
+        const key = mode === "year" ? date.slice(0, 7) : date;
+        let group = groups.at(-1);
+        if (!group || group.key !== key) {
+          group = { key, start: date, end: date };
+          groups.push(group);
+        }
+        group.end = date;
+      }
+      for (const group of groups) {
+        group.summary = summary(
+          rs.filter((r) => r.date >= group.start && r.date <= group.end),
+        );
+        group.value =
+          mode === "week"
+            ? group.summary.completed +
+              group.summary.missed +
+              group.summary.skipped +
+              group.summary.pending
+            : group.summary.rate;
+        group.label =
+          mode === "year"
+            ? new Date(group.start + "T12:00:00").toLocaleDateString("en-GB", {
+                month: "short",
+              })
+            : mode === "week"
+              ? new Date(group.start + "T12:00:00").toLocaleDateString(
+                  "en-GB",
+                  { weekday: "short" },
+                )
+              : String(new Date(group.start + "T12:00:00").getDate());
+      }
+    }
+    return {
+      mode,
+      groups,
+      metric: mode === "day" || mode === "week" ? "count" : "rate",
+    };
+  }
   // Full calendar periods for browsing; current periods stop at today.
   function periodRange(period, anchor, today = dateKey(new Date())) {
     const start = range(period, anchor).start;
@@ -388,6 +451,7 @@
     summary,
     streaks,
     range,
+    chartSeries,
     periodRange,
     movePeriod,
     demo,
