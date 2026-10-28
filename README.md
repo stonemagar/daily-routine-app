@@ -22,3 +22,10 @@ The main chart adapts to the selected period: Day shows four status counts, Week
 
 
 The compact overview keeps period navigation, date/filter controls, completion rate, four status counts and the analytical chart at the top. Streak summaries follow the chart. Completed routines, the consistency calendar, goals/milestones, insights, completion history and exports use native expandable sections with summary counts. They start collapsed, retain their open state during updates, and remain keyboard-accessible. Chart review links and heatmap dates automatically open the history section and focus the selected date.
+
+
+## New activity editor
+
+The activity dialog/bottom sheet includes a live category/time/repeat preview, reversible Study/Walk/Reading presets, quick durations, weekday/weekend/everyday shortcuts, weekly time totals, optional notes/priority and a sticky create/save/cancel footer. Draft shortcuts never write to storage. Edit mode keeps saved values and hides new-activity presets. Same-day time validation prevents a duration from silently rolling past midnight. Overlap hints are advisory and retain the existing save confirmation. The editor uses local SVG icons, works offline and supports keyboard focus trapping/Escape.
+
+`tests/editor.cjs` covers preview/preset behaviour, minute arithmetic, repeat groups, draft/cancel isolation, validation, overlap confirmation and create/edit preservation. Chromium QA also exercises scrolling, persistent footer actions at 320/390/480/1280 widths, reload persistence, dark mode and deletion. Actual device keyboard behaviour and push delivery are outside these editor checks.

@@ -1,4 +1,4 @@
-const CACHE_NAME = "daily-routine-app-v28";
+const CACHE_NAME = "daily-routine-app-v29";
 
 const APP_FILES = [
   "./",
@@ -6,6 +6,8 @@ const APP_FILES = [
   "./css/style.css",
   "./css/layout.css",
   "./css/progress.css",
+  "./css/activity-editor.css",
+  "./js/activity-editor.js",
   "./js/progress-core.js",
   "./js/progress.js",
   "./js/layout.js",

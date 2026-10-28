@@ -38,6 +38,7 @@ for (const name of [
   "app",
   "push-config",
   "layout",
+  "activity-editor",
   "progress",
   "notifications",
 ])

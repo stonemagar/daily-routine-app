@@ -2,8 +2,8 @@
   "name": "daily-routine-app",
   "private": true,
   "scripts": {
-    "test": "node tests/progress.cjs && node tests/layout.cjs",
-    "check": "node --check js/app.js && node --check js/layout.js && node --check js/notifications.js && node --check service-worker.js && node --check js/progress-core.js && node --check js/progress.js"
+    "test": "node tests/progress.cjs && node tests/layout.cjs && node tests/editor.cjs",
+    "check": "node --check js/app.js && node --check js/layout.js && node --check js/notifications.js && node --check service-worker.js && node --check js/progress-core.js && node --check js/progress.js && node --check js/activity-editor.js"
   },
   "engines": {
     "node": ">=24"

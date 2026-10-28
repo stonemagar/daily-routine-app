@@ -29,6 +29,7 @@
     <link href="assets/icons/icon-192.png" rel="icon" type="image/png" />
     <link href="css/layout.css" rel="stylesheet" />
     <link href="css/progress.css" rel="stylesheet" />
+    <link href="css/activity-editor.css" rel="stylesheet" />
   </head>
   <body>
     <div class="app-shell">
@@ -717,151 +718,306 @@
           role="dialog"
           tabindex="-1"
         >
-          <!-- Small handle displayed at the top of the mobile sheet -->
-          <div aria-hidden="true" class="sheet-handle"></div>
-          <div class="section-heading form-sheet-heading">
+          <div
+            class="section-heading form-sheet-heading activity-editor-header"
+          >
             <div>
-              <p class="eyebrow">New activity</p>
-              <h2 id="routineFormHeading">Add routine</h2>
+              <p class="eyebrow">Plan your day</p>
+              <h2 id="routineFormHeading">New activity</h2>
+              <p class="activity-editor-subtitle">
+                Make time for what matters.
+              </p>
             </div>
-            <!-- Visible only when the form is a mobile bottom sheet -->
             <button
               aria-label="Close routine form"
               class="sheet-close-button"
               id="closeRoutineFormButton"
               type="button"
             >
-              <i aria-hidden="true" class="bi bi-x-lg"> </i>
+              <span class="editor-close-mark" aria-hidden="true"></span>
             </button>
           </div>
           <form id="routineForm">
-            <!-- Routine name -->
-            <div class="form-group">
-              <label for="title"> Activity name </label>
-              <input
-                id="title"
-                maxlength="100"
-                name="title"
-                placeholder="Example: Study Python"
-                required=""
-                type="text"
-              />
-            </div>
-            <!-- Routine start and end times -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="startTime"> Start time </label>
-                <input
-                  id="startTime"
-                  name="startTime"
-                  required=""
-                  type="time"
-                />
-              </div>
-              <div class="form-group">
-                <label for="endTime"> End time </label>
-                <input id="endTime" name="endTime" required="" type="time" />
-              </div>
-            </div>
-            <!-- Routine category and repeating weekdays -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="category"> Category </label>
-                <select id="category" name="category">
-                  <option value="Study">Study</option>
-                  <option value="Work">Work</option>
-                  <option value="Health">Health</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Meal">Meal</option>
-                  <option value="Sleep">Sleep</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <span class="form-label"> Select days </span>
-                <div class="weekday-grid">
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Monday" />
-                    Monday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Tuesday" />
-                    Tuesday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Wednesday" />
-                    Wednesday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Thursday" />
-                    Thursday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Friday" />
-                    Friday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Saturday" />
-                    Saturday
-                  </label>
-                  <label class="weekday-option">
-                    <input name="days" type="checkbox" value="Sunday" />
-                    Sunday
-                  </label>
+            <div class="activity-editor-body">
+              <section class="activity-preview" aria-label="Activity preview">
+                <span
+                  id="activityPreviewIcon"
+                  class="activity-preview-icon"
+                  aria-hidden="true"
+                ></span>
+                <div class="activity-preview-copy">
+                  <span class="activity-preview-eyebrow">Your activity</span>
+                  <h3 id="activityPreviewTitle">Your next activity</h3>
+                  <p id="activityPreviewSchedule">
+                    Choose a time and repeat days
+                  </p>
+                  <span
+                    id="activityPreviewCategory"
+                    class="activity-category-tag"
+                    >Study</span
+                  >
                 </div>
-                <!-- Hidden until the user submits without selecting a day -->
-                <small class="text-danger d-none" id="dayError">
-                  Select at least one day.
-                </small>
-              </div>
+                <strong
+                  id="activityPreviewDuration"
+                  class="activity-duration-badge"
+                  >— min</strong
+                >
+              </section>
+              <section
+                id="activityQuickStart"
+                class="activity-quick-start"
+                aria-label="Quick start"
+              >
+                <p>Start with an idea</p>
+                <div class="activity-preset-row">
+                  <button type="button" data-activity-preset="study">
+                    Study session</button
+                  ><button type="button" data-activity-preset="walk">
+                    Go for a walk</button
+                  ><button type="button" data-activity-preset="read">
+                    Read a book
+                  </button>
+                </div>
+              </section>
+              <section
+                class="activity-form-section"
+                aria-labelledby="activityBasicsHeading"
+              >
+                <h3 id="activityBasicsHeading">
+                  <span aria-hidden="true">1</span> Activity
+                </h3>
+                <div class="activity-basics-grid">
+                  <div class="form-group">
+                    <label for="title"
+                      >Activity name
+                      <small id="activityTitleCount" aria-hidden="true"
+                        >0/100</small
+                      ></label
+                    ><input
+                      id="title"
+                      maxlength="100"
+                      name="title"
+                      placeholder="What would you like to do?"
+                      required
+                      type="text"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="category">Category</label
+                    ><select id="category" name="category">
+                      <option value="Study">Study</option>
+                      <option value="Work">Work</option>
+                      <option value="Health">Health</option>
+                      <option value="Personal">Personal</option>
+                      <option value="Meal">Meal</option>
+                      <option value="Sleep">Sleep</option>
+                    </select>
+                  </div>
+                </div>
+              </section>
+              <section
+                class="activity-form-section"
+                aria-labelledby="activityScheduleHeading"
+              >
+                <h3 id="activityScheduleHeading">
+                  <span aria-hidden="true">2</span> Time & duration
+                </h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="startTime">Start time</label
+                    ><input
+                      id="startTime"
+                      name="startTime"
+                      required
+                      type="time"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="endTime">End time</label
+                    ><input
+                      id="endTime"
+                      name="endTime"
+                      required
+                      type="time"
+                      aria-describedby="activityTimeHint"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="activity-duration-options"
+                  role="group"
+                  aria-label="Quick duration"
+                >
+                  <button type="button" data-activity-duration="15">
+                    15 min</button
+                  ><button type="button" data-activity-duration="25">
+                    25 min</button
+                  ><button type="button" data-activity-duration="30">
+                    30 min</button
+                  ><button type="button" data-activity-duration="60">
+                    1 hour
+                  </button>
+                </div>
+                <p
+                  id="activityTimeHint"
+                  class="activity-field-hint"
+                  role="status"
+                ></p>
+                <p
+                  id="activityConflictHint"
+                  class="activity-conflict-hint"
+                  role="status"
+                  hidden
+                ></p>
+              </section>
+              <section
+                class="activity-form-section"
+                aria-labelledby="activityRepeatHeading"
+              >
+                <h3 id="activityRepeatHeading">
+                  <span aria-hidden="true">3</span> Repeat
+                </h3>
+                <div
+                  class="activity-repeat-options"
+                  role="group"
+                  aria-label="Quick repeat schedule"
+                >
+                  <button type="button" data-activity-days="today">
+                    Today’s weekday</button
+                  ><button type="button" data-activity-days="weekdays">
+                    Weekdays</button
+                  ><button type="button" data-activity-days="weekend">
+                    Weekend</button
+                  ><button type="button" data-activity-days="everyday">
+                    Every day
+                  </button>
+                </div>
+                <fieldset class="activity-weekdays">
+                  <legend>Repeat on</legend>
+                  <div class="weekday-grid">
+                    <label class="weekday-option" title="Monday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Monday"
+                        aria-label="Monday"
+                      /><span>Mon</span></label
+                    >
+                    <label class="weekday-option" title="Tuesday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Tuesday"
+                        aria-label="Tuesday"
+                      /><span>Tue</span></label
+                    >
+                    <label class="weekday-option" title="Wednesday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Wednesday"
+                        aria-label="Wednesday"
+                      /><span>Wed</span></label
+                    >
+                    <label class="weekday-option" title="Thursday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Thursday"
+                        aria-label="Thursday"
+                      /><span>Thu</span></label
+                    >
+                    <label class="weekday-option" title="Friday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Friday"
+                        aria-label="Friday"
+                      /><span>Fri</span></label
+                    >
+                    <label class="weekday-option" title="Saturday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Saturday"
+                        aria-label="Saturday"
+                      /><span>Sat</span></label
+                    >
+                    <label class="weekday-option" title="Sunday"
+                      ><input
+                        name="days"
+                        type="checkbox"
+                        value="Sunday"
+                        aria-label="Sunday"
+                      /><span>Sun</span></label
+                    >
+                  </div>
+                </fieldset>
+                <small class="text-danger d-none" id="dayError" role="alert"
+                  >Select at least one day.</small
+                >
+                <p id="activityWeeklySummary" class="activity-field-hint"></p>
+              </section>
+              <details id="activityExtras" class="activity-extras">
+                <summary>
+                  <span>Notes & priority</span
+                  ><small id="activityExtrasSummary">Optional</small>
+                </summary>
+                <div class="activity-extras-body">
+                  <div class="form-group">
+                    <label for="notes"
+                      >Notes
+                      <small id="activityNotesCount" aria-hidden="true"
+                        >0/300</small
+                      ></label
+                    ><textarea
+                      class="form-control"
+                      id="notes"
+                      maxlength="300"
+                      name="notes"
+                      placeholder="Anything to remember?"
+                      rows="3"
+                    ></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="priority">Priority</label
+                    ><select class="form-select" id="priority" name="priority">
+                      <option value="Low">Low</option>
+                      <option selected value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
             </div>
-            <!-- ==================================================
-     ROUTINE DETAILS
-
-     Notes store extra information about the activity.
-     Priority shows how important the routine is.
-================================================== -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="notes"> Notes </label>
-                <textarea
-                  class="form-control"
-                  id="notes"
-                  maxlength="300"
-                  name="notes"
-                  placeholder="Example: Bring laptop and charger"
-                  rows="3"
-                ></textarea>
+            <footer class="activity-editor-footer">
+              <div class="form-actions">
+                <button class="primary-button" id="submitButton" type="submit">
+                  Create activity</button
+                ><button
+                  id="cancelNewActivity"
+                  class="activity-cancel"
+                  type="button"
+                >
+                  Cancel</button
+                ><button
+                  class="activity-cancel d-none"
+                  id="cancelEditButton"
+                  type="button"
+                >
+                  Cancel
+                </button>
               </div>
-              <div class="form-group">
-                <label for="priority"> Priority </label>
-                <select class="form-select" id="priority" name="priority">
-                  <option value="Low">Low</option>
-                  <option selected="" value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-            </div>
-            <!-- Add, update, and cancel controls -->
-            <div class="form-actions">
-              <button class="primary-button" id="submitButton" type="submit">
-                Add routine
-              </button>
               <button
-                class="btn btn-outline-secondary d-none"
-                id="cancelEditButton"
+                class="activity-delete"
+                hidden
+                id="deleteRoutineFromEditor"
                 type="button"
               >
-                Cancel edit
+                Delete routine
               </button>
-            </div>
-            <button
-              class="btn btn-outline-danger"
-              hidden=""
-              id="deleteRoutineFromEditor"
-              type="button"
-            >
-              Delete routine
-            </button>
+            </footer>
           </form>
         </section>
       </main>
@@ -925,6 +1081,7 @@
       ＋
     </button>
     <script src="js/layout.js"></script>
+    <script src="js/activity-editor.js"></script>
     <script src="js/progress.js"></script>
     <script src="js/notifications.js"></script>
   </body>

@@ -206,28 +206,14 @@ function resetRoutineForm() {
 
   routineForm.reset();
   clearSelectedDays();
-  try {
-    const savedProgress = JSON.parse(localStorage.getItem("routineProgress"));
-    progressData = ProgressCore.validState(savedProgress)
-      ? savedProgress
-      : ProgressCore.create(routines, completionHistory, getTodayKey());
-  } catch (_) {
-    progressData = ProgressCore.create(
-      routines,
-      completionHistory,
-      getTodayKey(),
-    );
-  }
-  ProgressCore.sync(progressData, routines, getTodayKey());
-  persistProgress();
   selectTodayByDefault();
   showDayError(false);
 
-  submitButton.textContent = "Add routine";
+  submitButton.textContent = "Create activity";
   cancelEditButton.classList.add("d-none");
 
   if (routineFormHeading) {
-    routineFormHeading.textContent = "Add routine";
+    routineFormHeading.textContent = "New activity";
   }
 
   setRoutineFormExpanded(false);
@@ -728,7 +714,7 @@ routineForm.addEventListener("submit", function (event) {
     editingRoutineId = null;
 
     routineForm.querySelector('button[type="submit"]').textContent =
-      "Add routine";
+      "Create activity";
   } else {
     routines.push(createRoutine(formData, selectedDays));
   }
@@ -778,9 +764,9 @@ function editRoutine(id) {
     focusTitle: false,
   });
 
-  submitButton.textContent = "Update routine";
+  submitButton.textContent = "Save changes";
   if (routineFormHeading) {
-    routineFormHeading.textContent = "Edit routine";
+    routineFormHeading.textContent = "Edit activity";
   }
   cancelEditButton.classList.remove("d-none");
 
