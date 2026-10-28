@@ -3,3 +3,6 @@
 push-server/node_modules/
 push-server/.wrangler/
 push-server/.dev.vars
+
+# Frontend test dependencies
+node_modules/
