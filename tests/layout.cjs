@@ -108,6 +108,61 @@ assert.equal(w.document.querySelectorAll(".heatmap-cell").length, 7);
 $("#progressFrom").value = "2026-02-30";
 $("#applyProgressFilters").click();
 assert.match($("#progressFilterError").textContent, /valid range/);
+// Completed occurrences follow period selection, include old history, and paginate.
+require("vm").runInContext(
+  `
+  for (let i=0;i<45;i++) {
+    const key=ProgressCore.shift(getTodayKey(),-i);
+    ProgressCore.setStatus(progressData,"study",key,"completed");
+  }
+  persistProgress();
+`,
+  dom.getInternalVMContext(),
+);
+$("[data-progress-period=week]").click();
+assert.match($("#periodCompletedList").textContent, /Study JavaScript/);
+for (const period of ["month", "year"]) {
+  $("[data-progress-period=" + period + "]").click();
+  const keys = [
+    ...w.document.querySelectorAll("#periodCompletedList [data-date]"),
+  ].map((n) => n.dataset.date);
+  assert.ok(
+    keys.every((key) =>
+      key.startsWith(date.slice(0, period === "month" ? 7 : 4)),
+    ),
+  );
+  assert.equal(keys[0], date);
+}
+$("#progressFrom").value = w.ProgressCore.shift(date, -44);
+$("#progressTo").value = date;
+$("#applyProgressFilters").click();
+assert.equal($("#periodCompletedCount").textContent, "45");
+assert.equal(
+  w.document.querySelectorAll("#periodCompletedList .history-row").length,
+  20,
+);
+$("#showMoreCompleted").click();
+assert.equal(
+  w.document.querySelectorAll("#periodCompletedList .history-row").length,
+  40,
+);
+$("#showMoreCompleted").click();
+assert.equal(
+  w.document.querySelectorAll("#periodCompletedList .history-row").length,
+  45,
+);
+assert.equal($("#showMoreCompleted").hidden, true);
+require("vm").runInContext(
+  `progressData.schedules.work = [{from:getTodayKey(),routine:{id:"work",title:"Work",category:"Work",startTime:"23:00",endTime:"23:30",days:[]}}];`,
+  dom.getInternalVMContext(),
+);
+w.dispatchEvent(new w.Event("routine-rendered"));
+$("#progressCategory").value = "Work";
+$("#progressCategory").dispatchEvent(new w.Event("change"));
+assert.equal($("#periodCompletedCount").textContent, "0");
+assert.match($("#periodCompletedList").textContent, /No completed routines/);
+$("#progressCategory").value = "All";
+$("#progressCategory").dispatchEvent(new w.Event("change"));
 // Backup validation accepts legacy history and rejects malformed new ledgers.
 const storedRoutine = JSON.parse(w.localStorage.getItem("routines"))[0];
 const ledger = JSON.parse(w.localStorage.getItem("routineProgress"));

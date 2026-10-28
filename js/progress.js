@@ -248,6 +248,66 @@
         ),
       );
   }
+  let completedLimit = 20,
+    completedSelection = "",
+    completedRows = [];
+  function renderCompletedRows() {
+    const list = $("periodCompletedList");
+    list.replaceChildren();
+    completedRows.slice(0, completedLimit).forEach((r) => {
+      const row = node("div", undefined, "history-row");
+      row.dataset.date = r.date;
+      row.append(node("strong", r.routine.title));
+      const time = r.completedAt
+        ? " · completed at " +
+          new Date(r.completedAt).toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "";
+      row.append(
+        node("small", readable(r.date) + " · " + r.routine.category + time),
+      );
+      list.append(row);
+    });
+    if (!completedRows.length)
+      list.append(
+        node(
+          "p",
+          "No completed routines saved for this period and filter. Mark a routine complete on Today, or review a past date in Completion history.",
+          "muted",
+        ),
+      );
+    $("showMoreCompleted").hidden = completedRows.length <= completedLimit;
+    $("showMoreCompleted").textContent =
+      "Show more (" +
+      Math.max(0, completedRows.length - completedLimit) +
+      " remaining)";
+  }
+  function renderCompleted(rs) {
+    const signature = JSON.stringify([selected, filters()]);
+    if (signature !== completedSelection) completedLimit = 20;
+    completedSelection = signature;
+    completedRows = rs
+      .filter((r) => r.status === "completed")
+      .sort(
+        (a, b) =>
+          b.date.localeCompare(a.date) ||
+          (b.completedAt || "").localeCompare(a.completedAt || "") ||
+          a.routine.title.localeCompare(b.routine.title),
+      );
+    $("periodCompletedCount").textContent = String(completedRows.length);
+    $("periodCompletedDescription").textContent =
+      readable(selected.start) +
+      " – " +
+      readable(selected.end) +
+      ". Most recent first; each completed occurrence is listed separately.";
+    renderCompletedRows();
+  }
+  $("showMoreCompleted").onclick = () => {
+    completedLimit += 20;
+    renderCompletedRows();
+  };
   function renderDetail(rs) {
     $("routineDetail").hidden = !detailId;
     if (!detailId) return;
@@ -326,6 +386,7 @@
     $("bestStreak").textContent =
       st.best + " " + (st.best === 1 ? "day" : "days");
     renderChart(rs);
+    renderCompleted(rs);
     heatmap();
     // Goals and milestones deliberately use all routines, independent of report filters.
     const week = C.range("week", getTodayKey()),

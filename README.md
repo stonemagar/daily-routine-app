@@ -4,7 +4,7 @@ A mobile-friendly daily routine planner built with HTML, CSS and JavaScript
 
 ## Progress tracking
 
-The Progress tab includes day/week/month/year reports, custom date ranges (up to 366 days), category and routine filters, equal-length period comparisons, a completion-count heatmap (latest 91 days in the selected period), scheduled-day streaks, routine details, category/weekday insights, editable history, a weekly completion goal, lifetime milestones, CSV export and a printable report.
+The Progress tab includes day/week/month/year reports, custom date ranges (up to 366 days), category and routine filters, equal-length period comparisons, a dated completed-routines list for each period, a completion-count heatmap (latest 91 days in the selected period), scheduled-day streaks, routine details, category/weekday insights, editable history, a weekly completion goal, lifetime milestones, CSV export and a printable report.
 
 Data stays in localStorage. `routineProgress` adds versioned schedule snapshots, explicit skipped/completed records, completion timestamps and goals; original `routines` and `completionHistory` keys remain compatible with notifications. Backups are version 3 and include the progress ledger. Version 2 backups still import. Deletion archives analytical history and stops future scheduling from tomorrow. Edits apply today onward, preserving earlier dates.
 
