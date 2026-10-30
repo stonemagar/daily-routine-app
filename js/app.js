@@ -122,6 +122,7 @@ function isRoutineCompleted(routineId) {
 }
 
 function toggleRoutine(id) {
+  const undoBefore = window.RoutineUndo?.capture();
   const todayKey = getTodayKey();
   const completedIds = completionHistory[todayKey] || [];
 
@@ -144,6 +145,12 @@ function toggleRoutine(id) {
   }
   saveCompletionHistory();
   renderRoutines();
+  window.RoutineUndo?.record(
+    undoBefore,
+    (completionHistory[todayKey].includes(id) ? "Completed “" : "Unmarked “") +
+      (routines.find((r) => r.id === id)?.title || "activity") +
+      "”",
+  );
 }
 
 /* Routine editor: centered dialog on desktop and bottom sheet on phones. */
@@ -701,6 +708,9 @@ routineForm.addEventListener("submit", function (event) {
     }
   }
 
+  const undoBefore = window.RoutineUndo?.capture();
+  const undoLabel =
+    (editingRoutineId ? "Edited “" : "Created “") + routineData.title + "”";
   if (editingRoutineId) {
     routines = routines.map((routine) =>
       routine.id === editingRoutineId
@@ -728,6 +738,7 @@ routineForm.addEventListener("submit", function (event) {
   resetRoutineForm();
 
   renderRoutines();
+  window.RoutineUndo?.record(undoBefore, undoLabel);
 });
 
 /* ------------------------------
@@ -793,6 +804,7 @@ function deleteRoutine(id) {
     return;
   }
 
+  const undoBefore = window.RoutineUndo?.capture();
   routines = routines.filter((routineItem) => routineItem.id !== id);
 
   // Retain completion history and schedule snapshots after deletion.
@@ -802,6 +814,7 @@ function deleteRoutine(id) {
 
   saveRoutines();
   renderRoutines();
+  window.RoutineUndo?.record(undoBefore, "Deleted “" + routine.title + "”");
 }
 
 /* ------------------------------
@@ -1076,6 +1089,7 @@ function importBackup(file) {
         return;
       }
 
+      window.RoutineUndo?.clear();
       routines = backupData.routines;
       completionHistory = backupData.completionHistory;
       progressData =

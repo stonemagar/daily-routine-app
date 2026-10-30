@@ -36,6 +36,7 @@ w.localStorage.setItem(
 for (const name of [
   "progress-core",
   "app",
+  "undo",
   "push-config",
   "layout",
   "activity-editor",

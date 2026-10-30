@@ -522,6 +522,7 @@
       select.value = r.status === "missed" ? "pending" : r.status;
       select.onchange = () => {
         if (demoData) return;
+        const undoBefore = window.RoutineUndo?.capture();
         C.setStatus(data(), r.id, r.date, select.value);
         persistProgress();
         const ids = (completionHistory[r.date] || []).filter(
@@ -531,6 +532,10 @@
         completionHistory[r.date] = ids;
         saveCompletionHistory();
         renderRoutines();
+        window.RoutineUndo?.record(
+          undoBefore,
+          "Updated history for “" + r.routine.title + "” on " + r.date,
+        );
         $("historyFeedback").textContent =
           "History updated for " + readable(r.date) + ".";
       };
@@ -964,6 +969,7 @@
     }
     $("progressFilterError").textContent = "";
     render();
+    window.dispatchEvent(new Event("progress-demo-changed"));
   }
   $("toggleProgressDemo").onclick = toggleDemo;
   $("exitProgressDemo").onclick = toggleDemo;
@@ -1033,10 +1039,12 @@
     if (demoData) return;
     const goal = Number($("weeklyGoalInput").value);
     if (!Number.isInteger(goal) || goal < 1 || goal > 9999) return;
+    const undoBefore = window.RoutineUndo?.capture();
     data().goals.weekly = goal;
     persistProgress();
     render();
     $("goalFeedback").textContent = "Weekly goal saved.";
+    window.RoutineUndo?.record(undoBefore, "Changed weekly goal");
   };
   const csvCell = (value) => {
     let s = String(value ?? "");

@@ -29,3 +29,10 @@ The compact overview keeps period navigation, date/filter controls, completion r
 The activity dialog/bottom sheet includes a live category/time/repeat preview, reversible Study/Walk/Reading presets, quick durations, weekday/weekend/everyday shortcuts, weekly time totals, optional notes/priority and a sticky create/save/cancel footer. Draft shortcuts never write to storage. Edit mode keeps saved values and hides new-activity presets. Same-day time validation prevents a duration from silently rolling past midnight. Overlap hints are advisory and retain the existing save confirmation. The editor uses local SVG icons, works offline and supports keyboard focus trapping/Escape.
 
 `tests/editor.cjs` covers preview/preset behaviour, minute arithmetic, repeat groups, draft/cancel isolation, validation, overlap confirmation and create/edit preservation. Chromium QA also exercises scrolling, persistent footer actions at 320/390/480/1280 widths, reload persistence, dark mode and deletion. Actual device keyboard behaviour and push delivery are outside these editor checks.
+
+
+## Undo saved changes
+
+Activity creation, edits, deletion, completion toggles, history corrections and weekly goal updates can be undone. Use the confirmation message or Settings → Undo changes. Up to 10 snapshots are kept in memory in this tab; dismissing the message does not remove them. Undo restores the original activity IDs, completion history and analytical schedule ledger together, and triggers the existing notification sync event.
+
+Undo history clears on reload, backup import, a new local day or an external storage change. Restoring checks both the current model and persisted data, so a stale snapshot cannot overwrite newer changes. Undo is disabled while the editor or demo preview is open. Tests cover reverse-order restoration, no-op/cancel behaviour, original IDs/history, goals/history corrections, session limits, import/day boundaries, external-change guards and storage-write rollback.
