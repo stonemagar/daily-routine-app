@@ -1,0 +1,104 @@
+.undo-toast {
+  position: fixed;
+  bottom: calc(172px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 180;
+  width: min(440px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #ffffff1a;
+  border-radius: 15px;
+  background: #172844;
+  color: #fff;
+  box-shadow: 0 8px 28px #101d3e25;
+}
+.undo-toast[hidden] {
+  display: none !important;
+}
+.undo-toast-copy {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.undo-toast-copy small {
+  display: block;
+  font-size: 10px;
+  color: #c0d0e7;
+  margin-top: 4px;
+}
+.undo-toast button {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #81bdff;
+  min-height: 42px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.undo-toast button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.undo-toast #dismissUndoToast {
+  color: #d8e3f4;
+  font-size: 22px;
+  font-weight: 400;
+  padding: 7px;
+  min-width: 30px;
+}
+.undo-toast button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.undo-settings-row {
+  align-items: center;
+  gap: 12px;
+}
+.undo-settings-row > span {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+#undoSettingsAction {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--primary);
+  padding: 9px 11px;
+  border-radius: 9px;
+  min-height: 42px;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#undoSettingsAction:disabled {
+  color: var(--muted);
+  opacity: 0.55;
+  cursor: default;
+}
+.undo-help {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  padding: 0 16px 14px;
+}
+@media (max-width: 350px) {
+  .undo-settings-row {
+    flex-wrap: wrap;
+  }
+  .undo-toast {
+    padding: 12px;
+    gap: 5px;
+  }
+  .undo-toast-copy {
+    font-size: 12px;
+  }
+}
